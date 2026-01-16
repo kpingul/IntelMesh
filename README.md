@@ -2,6 +2,24 @@
 
 A lightweight web application for aggregating and searching threat intelligence from news sources and PDF reports. Features a Mandiant TI-inspired dark dashboard with Co-Pilot style natural language search.
 
+## Screenshots
+
+### Overview Dashboard
+![Overview Dashboard](screenshots/intelmesh_1.png)
+*Main dashboard with stats cards, AI-powered search, source distribution, and IoC breakdown*
+
+### Threats View
+![Threats View](screenshots/intelmash_2.png)
+*Malware families and threat actors with mention counts and associated articles*
+
+### CVEs & Analytics
+![CVEs View](screenshots/intelmash_3.png)
+*Top CVEs, threat rankings, TTP distribution chart, and recent items feed*
+
+### Items Feed
+![Items Feed](screenshots/intelmash_4.png)
+*Article feed with extracted entities and real-time CVE/threat tracking*
+
 ## Features
 
 - **News Scraping**: Automatically fetches articles from BleepingComputer and GBHackers via RSS feeds
