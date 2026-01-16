@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ThreatPulse | Threat Intel Dashboard',
-  description: 'Advanced threat intelligence aggregation and analysis platform',
+  title: 'IntelMesh | Threat Intelligence Dashboard',
+  description: 'Connected threat intelligence aggregation and analysis platform',
 }
 
 export default function RootLayout({

@@ -99,10 +99,10 @@ export default function Sidebar({ currentView, onViewChange, stats }: SidebarPro
           </div>
           <div>
             <h1 className="font-display font-bold text-lg text-white tracking-tight">
-              ThreatPulse
+              IntelMesh
             </h1>
             <p className="text-xs text-dark-100 font-mono tracking-wider uppercase">
-              Intel Dashboard
+              Threat Intelligence
             </p>
           </div>
         </div>

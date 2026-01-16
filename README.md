@@ -1,4 +1,4 @@
-# Threat Intel Dashboard
+# IntelMesh
 
 A lightweight web application for aggregating and searching threat intelligence from news sources and PDF reports. Features a Mandiant TI-inspired dark dashboard with Co-Pilot style natural language search.
 

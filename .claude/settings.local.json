@@ -11,7 +11,14 @@
       "Bash(cat:*)",
       "Skill(frontend-design)",
       "Bash(npm run build:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(git branch:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Threat Intelligence Dashboard\n\nFull-stack threat intel aggregation platform with:\n- FastAPI backend with multi-source news scraping\n- Entity extraction \\(CVEs, IoCs, threat actors\\)\n- PDF upload and analysis\n- Next.js frontend with interactive dashboard\n- Co-Pilot style natural language search\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh repo create:*)",
+      "Bash(gh repo rename:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)"
     ]
   },
   "enabledPlugins": {
