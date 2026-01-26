@@ -1,156 +1,182 @@
 'use client';
 
 import {
-  LayoutDashboard,
-  Shield,
-  Target,
-  Skull,
+  Radar,
   FileText,
+  TrendingUp,
+  Layers,
+  BookOpen,
+  GraduationCap,
   Settings,
-  Zap
+  RefreshCw,
+  Upload,
+  ChevronRight
 } from 'lucide-react';
-import { ViewType } from '@/types';
+import { ViewType, Stats } from '@/types';
+import { format } from 'date-fns';
 
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
-  stats?: {
-    total_cves: number;
-    total_iocs: number;
-    total_threats: number;
-    total_items: number;
-  };
+  stats?: Stats;
+  onSync: () => void;
+  onUpload: (files: File[]) => void;
+  isSyncing: boolean;
+  isUploading: boolean;
 }
 
-export default function Sidebar({ currentView, onViewChange, stats }: SidebarProps) {
-  const navItems: { id: ViewType; label: string; icon: React.ReactNode; count?: number; accentColor: string }[] = [
+export default function Sidebar({
+  currentView,
+  onViewChange,
+  stats,
+  onSync,
+  onUpload,
+  isSyncing,
+  isUploading
+}: SidebarProps) {
+  const navItems: { id: ViewType; label: string; icon: React.ReactNode; description: string }[] = [
     {
-      id: 'overview',
-      label: 'Overview',
-      icon: <LayoutDashboard size={20} />,
-      accentColor: 'cyan'
+      id: 'today',
+      label: 'Today',
+      icon: <Radar size={20} />,
+      description: 'Daily briefing'
     },
     {
-      id: 'cves',
-      label: 'CVEs',
-      icon: <Shield size={20} />,
-      count: stats?.total_cves,
-      accentColor: 'red'
-    },
-    {
-      id: 'iocs',
-      label: 'IoCs',
-      icon: <Target size={20} />,
-      count: stats?.total_iocs,
-      accentColor: 'amber'
-    },
-    {
-      id: 'threats',
-      label: 'Threats',
-      icon: <Skull size={20} />,
-      count: stats?.total_threats,
-      accentColor: 'violet'
-    },
-    {
-      id: 'items',
-      label: 'All Items',
+      id: 'briefings',
+      label: 'Briefings',
       icon: <FileText size={20} />,
-      count: stats?.total_items,
-      accentColor: 'cyan'
+      description: 'Daily, weekly, monthly'
+    },
+    {
+      id: 'trends',
+      label: 'Trends',
+      icon: <TrendingUp size={20} />,
+      description: 'Patterns & shifts'
+    },
+    {
+      id: 'threads',
+      label: 'Threads',
+      icon: <Layers size={20} />,
+      description: 'Threat stories'
+    },
+    {
+      id: 'playbooks',
+      label: 'Playbooks',
+      icon: <BookOpen size={20} />,
+      description: 'Attack flows'
+    },
+    {
+      id: 'learning',
+      label: 'Learning',
+      icon: <GraduationCap size={20} />,
+      description: 'Your queue'
     },
   ];
 
-  const getAccentClasses = (accentColor: string, isActive: boolean) => {
-    const accents: Record<string, { active: string; inactive: string; badge: string }> = {
-      cyan: {
-        active: 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/30 shadow-glow-cyan/20',
-        inactive: 'text-dark-100 hover:bg-dark-700/50 hover:text-accent-cyan',
-        badge: 'bg-accent-cyan/20 text-accent-cyan'
-      },
-      red: {
-        active: 'bg-accent-red/10 text-accent-red border-accent-red/30 shadow-glow-red/20',
-        inactive: 'text-dark-100 hover:bg-dark-700/50 hover:text-accent-red',
-        badge: 'bg-accent-red/20 text-accent-red'
-      },
-      amber: {
-        active: 'bg-accent-amber/10 text-accent-amber border-accent-amber/30 shadow-glow-amber/20',
-        inactive: 'text-dark-100 hover:bg-dark-700/50 hover:text-accent-amber',
-        badge: 'bg-accent-amber/20 text-accent-amber'
-      },
-      violet: {
-        active: 'bg-accent-violet/10 text-accent-violet border-accent-violet/30 shadow-glow-violet/20',
-        inactive: 'text-dark-100 hover:bg-dark-700/50 hover:text-accent-violet',
-        badge: 'bg-accent-violet/20 text-accent-violet'
-      },
-    };
-    return accents[accentColor] || accents.cyan;
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.length) {
+      onUpload(Array.from(e.target.files));
+      e.target.value = '';
+    }
   };
 
   return (
-    <aside className="w-72 bg-dark-800/50 backdrop-blur-xl border-r border-dark-700/50 flex flex-col h-full relative z-10">
+    <aside className="w-72 bg-white border-r border-ink-100 flex flex-col h-full relative">
       {/* Logo Section */}
-      <div className="p-6 border-b border-dark-700/50">
-        <div className="flex items-center gap-4">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent-cyan to-accent-violet rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
-            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-accent-cyan to-accent-violet flex items-center justify-center">
-              <Zap size={24} className="text-white" />
-            </div>
+      <div className="p-6 border-b border-ink-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-coral to-accent-amber flex items-center justify-center shadow-soft">
+            <Radar size={22} className="text-white" />
           </div>
           <div>
-            <h1 className="font-display font-bold text-lg text-white tracking-tight">
-              IntelMesh
+            <h1 className="font-display font-semibold text-lg text-ink-900 tracking-tight">
+              Threat Radar
             </h1>
-            <p className="text-xs text-dark-100 font-mono tracking-wider uppercase">
-              Threat Intelligence
+            <p className="text-xs text-ink-400 font-medium">
+              Intelligence Briefings
             </p>
           </div>
         </div>
 
-        {/* Status indicator */}
-        <div className="mt-5 flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/30 border border-dark-600/50">
-          <div className="status-dot status-dot-active" />
-          <span className="text-xs text-dark-100 font-medium">System Active</span>
-          <span className="ml-auto text-xs text-accent-emerald font-mono">LIVE</span>
+        {/* Today's date */}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="date-badge">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-coral" />
+            {format(new Date(), 'EEEE, MMM d')}
+          </span>
         </div>
       </div>
 
+      {/* Quick Stats */}
+      {stats && (
+        <div className="px-6 py-4 border-b border-ink-100 bg-paper-50">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="text-2xl font-display font-semibold text-ink-900">
+                {stats.total_items}
+              </div>
+              <div className="text-xs text-ink-400 font-medium">Articles</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-display font-semibold text-accent-coral">
+                {stats.total_cves}
+              </div>
+              <div className="text-xs text-ink-400 font-medium">CVEs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-display font-semibold text-accent-amber">
+                {stats.total_iocs}
+              </div>
+              <div className="text-xs text-ink-400 font-medium">IoCs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-display font-semibold text-accent-violet">
+                {stats.total_threats}
+              </div>
+              <div className="text-xs text-ink-400 font-medium">Threats</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-4 overflow-y-auto">
-        <p className="text-xs font-semibold text-dark-200 uppercase tracking-wider mb-4 px-3">
+        <p className="text-xs font-semibold text-ink-300 uppercase tracking-wider mb-3 px-3">
           Navigation
         </p>
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {navItems.map((item, index) => {
             const isActive = currentView === item.id;
-            const accents = getAccentClasses(item.accentColor, isActive);
 
             return (
               <li
                 key={item.id}
                 className="animate-fadeInUp"
-                style={{ animationDelay: `${index * 50}ms` }}
+                style={{ animationDelay: `${index * 40}ms` }}
               >
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${
                     isActive
-                      ? `${accents.active} border`
-                      : `${accents.inactive} border border-transparent`
+                      ? 'bg-accent-coral/10 text-accent-coral'
+                      : 'text-ink-600 hover:bg-paper-200 hover:text-ink-800'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className={isActive ? 'animate-float' : ''}>
+                    <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
                       {item.icon}
                     </span>
-                    <span className="font-medium text-sm">{item.label}</span>
+                    <div className="text-left">
+                      <span className={`block text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                        {item.label}
+                      </span>
+                      <span className={`block text-xs ${isActive ? 'text-accent-coral/70' : 'text-ink-400'}`}>
+                        {item.description}
+                      </span>
+                    </div>
                   </div>
-                  {item.count !== undefined && item.count > 0 && (
-                    <span className={`text-xs font-mono px-2.5 py-1 rounded-lg ${
-                      isActive ? accents.badge : 'bg-dark-600/50 text-dark-100'
-                    }`}>
-                      {item.count.toLocaleString()}
-                    </span>
+                  {isActive && (
+                    <ChevronRight size={16} className="text-accent-coral" />
                   )}
                 </button>
               </li>
@@ -159,22 +185,51 @@ export default function Sidebar({ currentView, onViewChange, stats }: SidebarPro
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-dark-700/50">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-dark-200 hover:text-white hover:bg-dark-700/50 transition-all duration-200 group">
-          <Settings size={18} className="group-hover:rotate-90 transition-transform duration-500" />
+      {/* Actions */}
+      <div className="p-4 border-t border-ink-100 space-y-2">
+        <button
+          onClick={onSync}
+          disabled={isSyncing}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ink-900 text-white font-medium text-sm transition-all duration-200 hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+          {isSyncing ? 'Syncing...' : 'Sync News'}
+        </button>
+
+        <label className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-ink-200 text-ink-700 font-medium text-sm transition-all duration-200 hover:bg-paper-100 cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+          <Upload size={16} className={isUploading ? 'animate-pulse' : ''} />
+          {isUploading ? 'Uploading...' : 'Upload PDFs'}
+          <input
+            type="file"
+            accept=".pdf"
+            multiple
+            onChange={handleFileUpload}
+            disabled={isUploading}
+            className="hidden"
+          />
+        </label>
+      </div>
+
+      {/* Settings & Footer */}
+      <div className="p-4 border-t border-ink-100">
+        <button
+          onClick={() => onViewChange('settings')}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+            currentView === 'settings'
+              ? 'bg-paper-200 text-ink-800'
+              : 'text-ink-500 hover:bg-paper-100 hover:text-ink-700'
+          }`}
+        >
+          <Settings size={18} className="group-hover:rotate-45 transition-transform duration-300" />
           <span className="text-sm font-medium">Settings</span>
         </button>
 
         {/* Version info */}
-        <div className="mt-4 px-4 flex items-center justify-between text-xs text-dark-300">
-          <span className="font-mono">v1.0.0</span>
-          <span className="font-mono opacity-50">2024</span>
+        <div className="mt-3 px-3 flex items-center justify-between text-xs text-ink-300">
+          <span className="font-mono">v2.0.0</span>
+          <span>Cyber Threat Radar</span>
         </div>
       </div>
-
-      {/* Decorative gradient line */}
-      <div className="absolute right-0 top-1/4 bottom-1/4 w-px bg-gradient-to-b from-transparent via-accent-cyan/20 to-transparent" />
     </aside>
   );
 }

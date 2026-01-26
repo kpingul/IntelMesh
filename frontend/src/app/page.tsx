@@ -2,25 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '@/components/Sidebar';
-import TopBar from '@/components/TopBar';
-import SearchBar from '@/components/SearchBar';
-import StatsCards from '@/components/StatsCards';
-import ItemsList from '@/components/ItemsList';
-import DetailPanel from '@/components/DetailPanel';
-import CVEsView from '@/components/CVEsView';
-import IoCsView from '@/components/IoCsView';
-import ThreatsView from '@/components/ThreatsView';
-import OverviewCharts from '@/components/OverviewCharts';
+import TodayView from '@/components/TodayView';
+import BriefingsView from '@/components/BriefingsView';
+import TrendsView from '@/components/TrendsView';
+import ThreadsView from '@/components/ThreadsView';
+import PlaybooksView from '@/components/PlaybooksView';
+import LearningView from '@/components/LearningView';
+import SettingsView from '@/components/SettingsView';
+import ThreadDetailPanel from '@/components/ThreadDetailPanel';
 import {
   Stats, ThreatItem, CVEEntry, IoCs, ThreatEntry, SearchResult, ViewType
 } from '@/types';
 import * as api from '@/lib/api';
-import { AlertCircle, Shield, Skull } from 'lucide-react';
+import { AlertCircle, Search, X } from 'lucide-react';
 
 export default function Dashboard() {
   // View state
-  const [currentView, setCurrentView] = useState<ViewType>('overview');
-  const [timeRange, setTimeRange] = useState('all');
+  const [currentView, setCurrentView] = useState<ViewType>('today');
 
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
@@ -32,6 +30,7 @@ export default function Dashboard() {
   // UI state
   const [selectedItem, setSelectedItem] = useState<ThreatItem | null>(null);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -102,7 +101,6 @@ export default function Dashboard() {
 
   // Clear data handler
   const handleClear = async () => {
-    if (!confirm('Are you sure you want to clear all data?')) return;
     try {
       await api.clearData();
       await fetchData();
@@ -114,18 +112,20 @@ export default function Dashboard() {
   };
 
   // Search handler
-  const handleSearch = async (query: string): Promise<SearchResult | null> => {
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
     try {
       setIsSearching(true);
       setError(null);
-      const result = await api.search(query);
+      const result = await api.search(searchQuery);
       setSearchResult(result);
       setItems(result.results);
-      return result;
+      setCurrentView('threads');
     } catch (err) {
       console.error('Search failed:', err);
       setError('Search failed. Please try again.');
-      return null;
     } finally {
       setIsSearching(false);
     }
@@ -134,6 +134,7 @@ export default function Dashboard() {
   // Clear search handler
   const handleClearSearch = async () => {
     setSearchResult(null);
+    setSearchQuery('');
     const itemsRes = await api.getItems(undefined, 100);
     setItems(itemsRes.items);
   };
@@ -141,7 +142,6 @@ export default function Dashboard() {
   // Item click handler
   const handleItemClick = async (item: ThreatItem) => {
     try {
-      // Fetch full item details (includes evidence snippets)
       const fullItem = await api.getItem(item.id);
       setSelectedItem(fullItem);
     } catch {
@@ -149,150 +149,146 @@ export default function Dashboard() {
     }
   };
 
-  // Item click by ID (for views)
-  const handleItemClickById = async (itemId: string) => {
-    try {
-      const fullItem = await api.getItem(itemId);
-      setSelectedItem(fullItem);
-    } catch (err) {
-      console.error('Failed to fetch item:', err);
-    }
+  // Add to learning queue
+  const handleAddToLearning = (item: ThreatItem) => {
+    // In a real app, this would be persisted
+    console.log('Adding to learning queue:', item.id);
   };
 
   // Render main content based on current view
   const renderMainContent = () => {
     switch (currentView) {
-      case 'cves':
+      case 'today':
         return (
-          <CVEsView
-            cves={cves}
-            isLoading={isLoading}
-            onItemClick={handleItemClickById}
-          />
-        );
-      case 'iocs':
-        return (
-          <IoCsView
-            iocs={iocs}
-            isLoading={isLoading}
-            onItemClick={handleItemClickById}
-          />
-        );
-      case 'threats':
-        return (
-          <ThreatsView
-            threats={threats}
-            isLoading={isLoading}
-            onItemClick={handleItemClickById}
-          />
-        );
-      case 'items':
-        return (
-          <ItemsList
+          <TodayView
+            stats={stats}
             items={searchResult ? searchResult.results : items}
-            onItemClick={handleItemClick}
-            selectedItemId={selectedItem?.id}
             isLoading={isLoading}
-            title={searchResult ? `Search Results (${searchResult.result_count})` : 'All Items'}
+            onItemClick={handleItemClick}
+            onViewThreads={() => setCurrentView('threads')}
           />
         );
-      case 'overview':
+      case 'briefings':
+        return (
+          <BriefingsView
+            stats={stats}
+            items={searchResult ? searchResult.results : items}
+            isLoading={isLoading}
+            onItemClick={handleItemClick}
+          />
+        );
+      case 'trends':
+        return (
+          <TrendsView
+            stats={stats}
+            items={searchResult ? searchResult.results : items}
+            isLoading={isLoading}
+          />
+        );
+      case 'threads':
+        return (
+          <ThreadsView
+            items={searchResult ? searchResult.results : items}
+            stats={stats}
+            isLoading={isLoading}
+            onItemClick={handleItemClick}
+          />
+        );
+      case 'playbooks':
+        return (
+          <PlaybooksView
+            items={searchResult ? searchResult.results : items}
+            stats={stats}
+            isLoading={isLoading}
+            onItemClick={handleItemClick}
+          />
+        );
+      case 'learning':
+        return (
+          <LearningView
+            items={searchResult ? searchResult.results : items}
+            isLoading={isLoading}
+            onItemClick={handleItemClick}
+          />
+        );
+      case 'settings':
+        return (
+          <SettingsView
+            onClearData={handleClear}
+          />
+        );
       default:
         return (
-          <>
-            <StatsCards stats={stats} isLoading={isLoading} />
-            <OverviewCharts stats={stats} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ItemsList
-                items={(searchResult ? searchResult.results : items).slice(0, 10)}
-                onItemClick={handleItemClick}
-                selectedItemId={selectedItem?.id}
-                isLoading={isLoading}
-                title="Recent Items"
-              />
-              <div className="space-y-6">
-                {/* Top CVEs Mini List */}
-                {stats && stats.top_cves.length > 0 && (
-                  <div className="rounded-2xl p-6 bg-dark-700/30 border border-dark-600/30 hover:border-accent-red/20 transition-all duration-300">
-                    <div className="flex items-center gap-2 mb-5">
-                      <div className="p-1.5 rounded-lg bg-accent-red/15">
-                        <Shield size={14} className="text-accent-red" />
-                      </div>
-                      <h3 className="text-base font-display font-semibold text-white">Top CVEs</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {stats.top_cves.slice(0, 5).map(([cve, count], i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-2.5 border-b border-dark-600/30 last:border-0"
-                        >
-                          <code className="text-accent-red font-mono text-sm font-medium">{cve}</code>
-                          <span className="text-dark-200 text-sm font-mono">
-                            {count} mention{count > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Top Threats Mini List */}
-                {stats && stats.top_threats.length > 0 && (
-                  <div className="rounded-2xl p-6 bg-dark-700/30 border border-dark-600/30 hover:border-accent-violet/20 transition-all duration-300">
-                    <div className="flex items-center gap-2 mb-5">
-                      <div className="p-1.5 rounded-lg bg-accent-violet/15">
-                        <Skull size={14} className="text-accent-violet" />
-                      </div>
-                      <h3 className="text-base font-display font-semibold text-white">Top Threats</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {stats.top_threats.slice(0, 5).map(([threat, count], i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-2.5 border-b border-dark-600/30 last:border-0"
-                        >
-                          <span className="text-accent-violet font-medium text-sm">{threat}</span>
-                          <span className="text-dark-200 text-sm font-mono">
-                            {count} mention{count > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
+          <TodayView
+            stats={stats}
+            items={searchResult ? searchResult.results : items}
+            isLoading={isLoading}
+            onItemClick={handleItemClick}
+            onViewThreads={() => setCurrentView('threads')}
+          />
         );
     }
   };
 
   return (
-    <div className="flex h-screen bg-void relative overflow-hidden">
+    <div className="flex h-screen bg-paper-50 relative overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
-        stats={stats ? {
-          total_cves: stats.total_cves,
-          total_iocs: stats.total_iocs,
-          total_threats: stats.total_threats,
-          total_items: stats.total_items,
-        } : undefined}
+        stats={stats || undefined}
+        onSync={handleSync}
+        onUpload={handleUpload}
+        isSyncing={isSyncing}
+        isUploading={isUploading}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        {/* Top Bar */}
-        <TopBar
-          onSync={handleSync}
-          onUpload={handleUpload}
-          onClear={handleClear}
-          isSyncing={isSyncing}
-          isUploading={isUploading}
-          timeRange={timeRange}
-          onTimeRangeChange={setTimeRange}
-        />
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Top Search Bar */}
+        <div className="bg-white border-b border-ink-100 px-8 py-4">
+          <form onSubmit={handleSearch} className="max-w-2xl">
+            <div className="relative">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" />
+              <input
+                type="text"
+                placeholder="Search threats by CVE, actor, technique, or keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input pl-11 pr-24"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-20 top-1/2 -translate-y-1/2 p-1.5 text-ink-400 hover:text-ink-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={isSearching || !searchQuery.trim()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-ink-900 text-white text-sm font-medium rounded-lg hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSearching ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+
+            {/* Search result indicator */}
+            {searchResult && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-ink-600">
+                <span>Found <strong>{searchResult.result_count}</strong> results for "{searchResult.query}"</span>
+                <button
+                  onClick={handleClearSearch}
+                  className="text-accent-coral hover:underline"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+          </form>
+        </div>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
@@ -300,19 +296,17 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto p-8">
             {/* Error Banner */}
             {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-accent-red/10 border border-accent-red/30 flex items-center gap-3 animate-fadeInUp">
-                <AlertCircle size={20} className="text-accent-red flex-shrink-0" />
-                <p className="text-accent-red text-sm">{error}</p>
+              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 animate-fadeInUp">
+                <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
+                <p className="text-red-700 text-sm">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-auto p-1 text-red-400 hover:text-red-600"
+                >
+                  <X size={16} />
+                </button>
               </div>
             )}
-
-            {/* Search Bar */}
-            <SearchBar
-              onSearch={handleSearch}
-              onClearSearch={handleClearSearch}
-              searchResult={searchResult}
-              isSearching={isSearching}
-            />
 
             {/* Main Content */}
             {renderMainContent()}
@@ -320,9 +314,10 @@ export default function Dashboard() {
 
           {/* Detail Panel */}
           {selectedItem && (
-            <DetailPanel
+            <ThreadDetailPanel
               item={selectedItem}
               onClose={() => setSelectedItem(null)}
+              onAddToLearning={handleAddToLearning}
             />
           )}
         </div>

@@ -1,4 +1,4 @@
-// Type definitions for the Threat Intel Dashboard
+// Type definitions for Cyber Threat Radar
 
 export interface ExtractedEntities {
   cves: string[];
@@ -20,7 +20,7 @@ export interface Hash {
 export interface ThreatItem {
   id: string;
   title: string;
-  source: 'bleepingcomputer' | 'gbhackers' | 'pdf';
+  source: 'bleepingcomputer' | 'gbhackers' | 'thehackernews' | 'krebsonsecurity' | 'securityaffairs' | 'threatpost' | 'securityweek' | 'cisa' | 'talos' | 'unit42' | 'mandiant' | 'recordedfuture' | 'pdf';
   date: string;
   description: string;
   content?: string;
@@ -57,11 +57,7 @@ export interface Stats {
   all_malware: string[];
   all_actors: string[];
   tag_counts: Record<string, number>;
-  sources: {
-    bleepingcomputer: number;
-    gbhackers: number;
-    pdf: number;
-  };
+  sources: Record<string, number>;
 }
 
 export interface CVEEntry {
@@ -103,4 +99,102 @@ export interface SearchResult {
   results: ThreatItem[];
 }
 
-export type ViewType = 'overview' | 'cves' | 'iocs' | 'threats' | 'items';
+// New types for Cyber Threat Radar
+export type ViewType = 'today' | 'briefings' | 'trends' | 'threads' | 'playbooks' | 'learning' | 'settings';
+
+export type BriefingMode = 'executive' | 'analyst' | 'engineer';
+
+export type BriefingPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface BriefingBullet {
+  id: string;
+  text: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  relatedThreadId?: string;
+  tags?: string[];
+}
+
+export interface ThreatThread {
+  id: string;
+  title: string;
+  summary: string[];
+  category: string;
+  tags: string[];
+  entities: {
+    cves: string[];
+    vendors: string[];
+    actors: string[];
+    malware: string[];
+    techniques: string[];
+  };
+  whyItMatters: string;
+  sources: ThreatItem[];
+  hasAttackFlow: boolean;
+  updatedAt: string;
+  sourceCount: number;
+}
+
+export interface AttackFlowStep {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  attackerAction: string;
+  defenderLookFor: string[];
+  mitigations: string[];
+  detectionIdeas: string[];
+  technique?: string;
+}
+
+export interface Playbook {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  category: string;
+  techniques: string[];
+  steps: AttackFlowStep[];
+  threadId?: string;
+}
+
+export interface LearningQueueItem {
+  id: string;
+  type: 'thread' | 'playbook';
+  itemId: string;
+  title: string;
+  status: 'not_started' | 'in_progress' | 'learned';
+  notes?: string;
+  reviewLater: boolean;
+  addedAt: string;
+}
+
+export interface UserPreferences {
+  briefingMode: BriefingMode;
+  briefingLength: 5 | 10 | 15;
+  preferredCategories: string[];
+  preferredVendors: string[];
+  preferredTechniques: string[];
+  watchlist: WatchlistItem[];
+  trendWindow: '7d' | '30d' | '90d';
+}
+
+export interface WatchlistItem {
+  id: string;
+  type: 'vendor' | 'technique' | 'actor' | 'category' | 'cve';
+  value: string;
+}
+
+export interface TrendInsight {
+  id: string;
+  text: string;
+  type: 'rising' | 'falling' | 'persistent' | 'new';
+  relatedEntity: string;
+  confidence: number;
+}
+
+export interface CategoryTrend {
+  category: string;
+  data: { date: string; count: number }[];
+  change: number;
+  direction: 'up' | 'down' | 'stable';
+}

@@ -1,46 +1,46 @@
-# IntelMesh
+# Cyber Threat Radar
 
-A lightweight web application for aggregating and searching threat intelligence from news sources and PDF reports. Features a Mandiant TI-inspired dark dashboard with Co-Pilot style natural language search.
-
-## Screenshots
-
-### Overview Dashboard
-![Overview Dashboard](screenshots/intelmesh_1.png)
-*Main dashboard with stats cards, AI-powered search, source distribution, and IoC breakdown*
-
-### Threats View
-![Threats View](screenshots/intelmash_2.png)
-*Malware families and threat actors with mention counts and associated articles*
-
-### CVEs & Analytics
-![CVEs View](screenshots/intelmash_3.png)
-*Top CVEs, threat rankings, TTP distribution chart, and recent items feed*
-
-### Items Feed
-![Items Feed](screenshots/intelmash_4.png)
-*Article feed with extracted entities and real-time CVE/threat tracking*
+A personal threat intelligence briefing platform designed for security professionals. Get daily briefings, track trends, study attack patterns, and build your defensive knowledge—all in a clean, learning-first interface.
 
 ## Features
 
-- **News Scraping**: Automatically fetches articles from BleepingComputer and GBHackers via RSS feeds
-- **PDF Upload**: Extract threat intelligence from uploaded PDF reports
-- **Entity Extraction**: Automatically extracts CVEs, IoCs (IPs, domains, hashes, URLs), malware names, threat actors, and TTP tags
-- **Co-Pilot Search**: Natural language search bar supporting queries like:
-  - "CVEs from last 7 days"
-  - "show IoCs for CVE-2025-1234"
-  - "find articles about ransomware"
-  - "search Emotet"
-- **Dashboard Views**: Overview, CVEs, IoCs, Threats, and Items views
-- **Detail Panel**: Click any item to see extracted entities with evidence snippets
-- **No Database**: All data lives in memory for the session
+### Daily Briefings
+- **Today's Briefing**: 5-10 bullet summary of what matters today
+- **Briefing Modes**: Executive (impact-focused), Analyst (investigation angles), Engineer (mitigation steps)
+- **Daily/Weekly/Monthly Views**: Curated summaries that emphasize patterns and learning
+
+### Trends & Patterns
+- **Category Trends**: Track ransomware, phishing, exploitation, and other threat categories
+- **Technique Frequency**: See which TTPs are appearing most often
+- **Insight Cards**: AI-generated observations like "OAuth abuse is rising"
+
+### Threat Threads
+- **Deduplicated Stories**: Multiple articles clustered into single threat topics
+- **Rich Entity Extraction**: CVEs, IoCs, threat actors, malware families, TTPs
+- **Attack Flow Indicators**: See which threads have step-by-step attack breakdowns
+
+### Attack Playbooks
+- **Visual Attack Flows**: Step-by-step breakdown of how attacks work
+- **Defender Guidance**: What to look for, mitigations, and detection ideas
+- **Difficulty Levels**: Beginner, intermediate, and advanced playbooks
+
+### Learning Queue
+- **Personal Study List**: Track what you're learning
+- **Progress Tracking**: Not started, in progress, learned
+- **Notes & Takeaways**: Capture your insights
+
+### 12 News Sources
+- BleepingComputer, GBHackers, The Hacker News, Krebs on Security
+- Security Affairs, Threatpost, SecurityWeek, CISA
+- Cisco Talos, Palo Alto Unit42, Mandiant, Recorded Future
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.9+ (3.11 recommended)
 - Node.js 18+
-- npm or yarn
+- npm
 
 ### Installation
 
@@ -52,7 +52,7 @@ A lightweight web application for aggregating and searching threat intelligence 
 2. **Set up the backend:**
    ```bash
    cd backend
-   python -m venv venv
+   python3.11 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
@@ -68,8 +68,8 @@ A lightweight web application for aggregating and searching threat intelligence 
 **Terminal 1 - Start the backend:**
 ```bash
 cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+source venv/bin/activate
+python -m uvicorn main:app --reload --port 8000
 ```
 
 **Terminal 2 - Start the frontend:**
@@ -82,19 +82,20 @@ npm run dev
 
 ## Usage
 
-1. **Sync News**: Click "Sync News" to fetch the latest articles from BleepingComputer and GBHackers
-2. **Upload PDFs**: Click "Upload PDFs" to upload threat intelligence reports
-3. **Browse**: Use the sidebar to navigate between Overview, CVEs, IoCs, Threats, and Items views
-4. **Search**: Use the Co-Pilot search bar to query your data with natural language
-5. **View Details**: Click any item to see the detail panel with extracted entities
+1. **Sync News**: Click "Sync News" in the sidebar to fetch the latest articles
+2. **Daily Briefing**: Start on the Today view for a quick situational awareness check
+3. **Explore Trends**: Use the Trends view to identify patterns and shifts
+4. **Study Threads**: Browse deduplicated threat stories in the Threads view
+5. **Learn Playbooks**: Study attack flows with defender guidance
+6. **Track Learning**: Add items to your learning queue and capture notes
 
 ## Architecture
 
 ```
 threat-intel-dashboard/
 ├── backend/
-│   ├── main.py           # FastAPI application
-│   ├── scraper.py        # RSS/HTML scraping for news sources
+│   ├── main.py           # FastAPI application (11 endpoints)
+│   ├── scraper.py        # RSS/HTML scraping for 12 news sources
 │   ├── extractors.py     # Entity extraction (CVEs, IoCs, threats, TTPs)
 │   ├── pdf_extractor.py  # PDF text extraction
 │   ├── query_parser.py   # Natural language query parsing
@@ -104,24 +105,21 @@ threat-intel-dashboard/
 └── frontend/
     ├── src/
     │   ├── app/
-    │   │   ├── page.tsx      # Main dashboard page
+    │   │   ├── page.tsx      # Main dashboard
     │   │   ├── layout.tsx    # Root layout
     │   │   └── globals.css   # Global styles
     │   ├── components/
     │   │   ├── Sidebar.tsx
-    │   │   ├── TopBar.tsx
-    │   │   ├── SearchBar.tsx
-    │   │   ├── StatsCards.tsx
-    │   │   ├── ItemsList.tsx
-    │   │   ├── DetailPanel.tsx
-    │   │   ├── CVEsView.tsx
-    │   │   ├── IoCsView.tsx
-    │   │   ├── ThreatsView.tsx
-    │   │   └── OverviewCharts.tsx
-    │   ├── lib/
-    │   │   └── api.ts        # API client utilities
-    │   └── types/
-    │       └── index.ts      # TypeScript type definitions
+    │   │   ├── TodayView.tsx
+    │   │   ├── BriefingsView.tsx
+    │   │   ├── TrendsView.tsx
+    │   │   ├── ThreadsView.tsx
+    │   │   ├── PlaybooksView.tsx
+    │   │   ├── LearningView.tsx
+    │   │   ├── SettingsView.tsx
+    │   │   └── ThreadDetailPanel.tsx
+    │   ├── lib/api.ts
+    │   └── types/index.ts
     ├── package.json
     └── tailwind.config.js
 ```
@@ -130,53 +128,30 @@ threat-intel-dashboard/
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/stats` | GET | Get dashboard statistics |
-| `/api/items` | GET | Get all items (with optional source filter) |
-| `/api/items/{id}` | GET | Get specific item with evidence snippets |
-| `/api/cves` | GET | Get all CVEs with counts and sources |
-| `/api/iocs` | GET | Get all IoCs grouped by type |
-| `/api/threats` | GET | Get all threats (malware + actors) |
+| `/api/stats` | GET | Dashboard statistics |
+| `/api/items` | GET | All items (with optional source filter) |
+| `/api/items/{id}` | GET | Specific item with evidence snippets |
+| `/api/cves` | GET | All CVEs with counts and sources |
+| `/api/iocs` | GET | All IoCs grouped by type |
+| `/api/threats` | GET | All threats (malware + actors) |
 | `/api/sync` | POST | Sync news from configured sources |
 | `/api/upload` | POST | Upload and process PDF files |
-| `/api/search` | POST | Co-Pilot style natural language search |
+| `/api/search` | POST | Natural language search |
 | `/api/clear` | DELETE | Clear all stored data |
 
-## Search Query Examples
+## Design Philosophy
 
-- `CVEs from last 7 days` - Filter CVEs by time range
-- `show IoCs for CVE-2025-1234` - Find IoCs associated with a specific CVE
-- `find articles about ransomware` - Search for keyword in articles
-- `search Emotet` - Search for a specific malware family
-- `threats from bleepingcomputer` - Filter by source
-- `list IPs` - Show IP addresses
-- `domains from last 24 hours` - Combined filters
-
-## Customization
-
-### Adding New News Sources
-
-Edit `backend/scraper.py` to add new RSS feeds:
-
-```python
-RSS_FEEDS = {
-    "bleepingcomputer": "https://www.bleepingcomputer.com/feed/",
-    "gbhackers": "https://gbhackers.com/feed/",
-    # Add new sources here
-}
-```
-
-### Extending Entity Extraction
-
-Edit `backend/extractors.py` to add:
-- New malware families to `MALWARE_FAMILIES`
-- New threat actors to `THREAT_ACTORS`
-- New TTP keywords to `TTP_KEYWORDS`
+- **Signal over noise**: Deduplicate stories into threads
+- **Learning-first**: Every item teaches "how it works" + "what to do"
+- **Fast scanning**: Briefings readable in minutes
+- **Visual understanding**: Attack flow diagrams make threats memorable
 
 ## Tech Stack
 
 - **Backend**: FastAPI, httpx, BeautifulSoup4, feedparser, pdfplumber
-- **Frontend**: Next.js 14, React, Tailwind CSS, Recharts, Lucide Icons
-- **No Database**: In-memory storage only
+- **Frontend**: Next.js 14, React 18, Tailwind CSS, Recharts, Lucide Icons
+- **Typography**: Fraunces (display), Source Sans 3 (body), JetBrains Mono (code)
+- **No Database**: In-memory storage only (session-based)
 
 ## License
 

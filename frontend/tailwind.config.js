@@ -8,65 +8,74 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Deep space dark theme
-        void: '#05080c',
-        dark: {
-          900: '#0a0f16',
-          800: '#0f151e',
-          700: '#151d29',
-          600: '#1a2332',
-          500: '#1f2937',
-          400: '#374151',
-          300: '#4b5563',
-          200: '#6b7280',
-          100: '#8b9eb0',
+        // Refined paper & ink light theme
+        paper: {
+          50: '#FDFCFB',
+          100: '#FAF9F7',
+          200: '#F5F3F0',
+          300: '#EBE8E4',
+          400: '#DED9D3',
+          500: '#C7C1B9',
         },
-        // Electric accent palette
+        ink: {
+          900: '#1A1915',
+          800: '#2D2B26',
+          700: '#3D3A33',
+          600: '#5C5850',
+          500: '#7A756A',
+          400: '#9B9589',
+          300: '#B8B3A8',
+          200: '#D4D0C7',
+          100: '#E8E5DE',
+        },
+        // Accent palette - refined & purposeful
         accent: {
-          cyan: '#38bdf8',
-          magenta: '#f472b6',
-          amber: '#fbbf24',
-          emerald: '#34d399',
-          violet: '#a78bfa',
-          red: '#fb7185',
+          coral: '#E85D4C',
+          terracotta: '#C94D38',
+          amber: '#D4940A',
+          gold: '#B8860B',
+          teal: '#0F8B8D',
+          ocean: '#2563EB',
+          indigo: '#4F46E5',
+          violet: '#7C3AED',
+          slate: '#475569',
         },
         // Semantic threat colors
         threat: {
-          critical: '#fb7185',
-          high: '#f472b6',
-          medium: '#fbbf24',
-          low: '#34d399',
-          info: '#38bdf8',
+          critical: '#DC2626',
+          high: '#EA580C',
+          medium: '#D97706',
+          low: '#059669',
+          info: '#0EA5E9',
         }
       },
       fontFamily: {
-        sans: ['Sora', 'system-ui', 'sans-serif'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'Fira Code', 'monospace'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Source Sans 3', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       boxShadow: {
-        'glow-cyan': '0 0 20px rgba(56, 189, 248, 0.35)',
-        'glow-magenta': '0 0 20px rgba(244, 114, 182, 0.35)',
-        'glow-violet': '0 0 20px rgba(167, 139, 250, 0.35)',
-        'glow-amber': '0 0 20px rgba(251, 191, 36, 0.3)',
-        'glow-emerald': '0 0 20px rgba(52, 211, 153, 0.3)',
-        'glow-red': '0 0 20px rgba(251, 113, 133, 0.3)',
-        'elevated': '0 4px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(56, 189, 248, 0.05)',
+        'soft': '0 1px 3px rgba(26, 25, 21, 0.05), 0 1px 2px rgba(26, 25, 21, 0.03)',
+        'card': '0 4px 12px rgba(26, 25, 21, 0.08), 0 1px 3px rgba(26, 25, 21, 0.05)',
+        'elevated': '0 8px 24px rgba(26, 25, 21, 0.12), 0 2px 8px rgba(26, 25, 21, 0.06)',
+        'float': '0 12px 40px rgba(26, 25, 21, 0.15), 0 4px 12px rgba(26, 25, 21, 0.08)',
+        'inner-soft': 'inset 0 1px 2px rgba(26, 25, 21, 0.04)',
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #38bdf8, #a78bfa)',
-        'gradient-danger': 'linear-gradient(135deg, #fb7185, #f472b6)',
-        'gradient-surface': 'linear-gradient(180deg, rgba(56, 189, 248, 0.03) 0%, transparent 100%)',
-        'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
+        'gradient-warm': 'linear-gradient(135deg, #FAF9F7 0%, #F5F3F0 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #E85D4C 0%, #D4940A 100%)',
+        'gradient-subtle': 'linear-gradient(180deg, rgba(232, 93, 76, 0.03) 0%, transparent 100%)',
+        'noise': "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
       },
       animation: {
-        'fadeIn': 'fadeIn 0.4s ease-out forwards',
-        'fadeInUp': 'fadeInUp 0.5s ease-out forwards',
+        'fadeIn': 'fadeIn 0.5s ease-out forwards',
+        'fadeInUp': 'fadeInUp 0.6s ease-out forwards',
         'slideIn': 'slideInRight 0.4s ease-out forwards',
         'slideInLeft': 'slideInLeft 0.4s ease-out forwards',
-        'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
-        'float': 'float 3s ease-in-out infinite',
-        'shimmer': 'shimmer 1.5s infinite',
+        'slideDown': 'slideDown 0.3s ease-out forwards',
+        'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2s infinite',
+        'spin-slow': 'spin 3s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -74,24 +83,24 @@ module.exports = {
           '100%': { opacity: '1' },
         },
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideInRight: {
-          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '0%': { opacity: '0', transform: 'translateX(24px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         slideInLeft: {
-          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '0%': { opacity: '0', transform: 'translateX(-24px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
-        'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(56, 189, 248, 0.35)' },
-          '50%': { boxShadow: '0 0 30px rgba(56, 189, 248, 0.35), 0 0 60px rgba(56, 189, 248, 0.35)' },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-4px)' },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
@@ -103,8 +112,19 @@ module.exports = {
         '2xl': '16px',
         '3xl': '24px',
       },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+      },
       transitionDuration: {
         '400': '400ms',
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+          },
+        },
       },
     },
   },
