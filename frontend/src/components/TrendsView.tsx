@@ -27,9 +27,9 @@ const CHART_COLORS = {
   blue: '#3b82f6',
   red: '#ef4444',
   amber: '#f59e0b',
-  purple: '#8b5cf6',
+  slate: '#64748b',
   green: '#22c55e',
-  cyan: '#06b6d4',
+  cyan: '#0ea5e9',
 };
 
 export default function TrendsView({
@@ -88,7 +88,7 @@ export default function TrendsView({
       { name: 'IPs', value: stats.ioc_breakdown.ips, fill: CHART_COLORS.amber },
       { name: 'Domains', value: stats.ioc_breakdown.domains, fill: CHART_COLORS.blue },
       { name: 'Hashes', value: stats.ioc_breakdown.hashes, fill: CHART_COLORS.cyan },
-      { name: 'URLs', value: stats.ioc_breakdown.urls, fill: CHART_COLORS.purple },
+      { name: 'URLs', value: stats.ioc_breakdown.urls, fill: CHART_COLORS.slate },
     ].filter(d => d.value > 0);
   }, [stats]);
 
@@ -190,20 +190,20 @@ export default function TrendsView({
               key={index}
               className={`bg-white p-4 rounded-lg border border-slate-200 border-l-4 ${
                 insight.type === 'critical' ? 'border-l-red-500' :
-                insight.type === 'rising' ? 'border-l-blue-500' : 'border-l-purple-500'
+                insight.type === 'rising' ? 'border-l-blue-500' : 'border-l-slate-500'
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${
                   insight.type === 'critical' ? 'bg-red-100' :
-                  insight.type === 'rising' ? 'bg-blue-100' : 'bg-purple-100'
+                  insight.type === 'rising' ? 'bg-blue-100' : 'bg-slate-100'
                 }`}>
                   {insight.type === 'critical' ? (
                     <AlertTriangle size={16} className="text-red-600" />
                   ) : insight.type === 'rising' ? (
                     <TrendingUp size={16} className="text-blue-600" />
                   ) : (
-                    <Activity size={16} className="text-purple-600" />
+                    <Activity size={16} className="text-slate-600" />
                   )}
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed">
@@ -325,21 +325,21 @@ export default function TrendsView({
           {stats.top_threats.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 p-4">
               <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle size={16} className="text-purple-500" />
+                <AlertTriangle size={16} className="text-slate-500" />
                 <h3 className="font-medium text-slate-800 text-sm">Threat Actors</h3>
               </div>
               <div className="space-y-3">
                 {stats.top_threats.slice(0, 6).map(([threat, count], i) => (
                   <div key={i} className="group">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium text-purple-600 group-hover:text-purple-700 transition-colors">
+                      <span className="text-xs font-medium text-slate-600 group-hover:text-slate-700 transition-colors">
                         {threat}
                       </span>
                       <span className="text-xs text-slate-400">{count}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-purple-500 transition-all duration-500"
+                        className="h-full rounded-full bg-slate-500 transition-all duration-500"
                         style={{ width: `${(count / stats.top_threats[0][1]) * 100}%` }}
                       />
                     </div>

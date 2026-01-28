@@ -50,13 +50,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Selection */
 ::selection {
-  background: rgba(6, 182, 212, 0.3);
+  background: rgba(14, 165, 233, 0.3);
   color: white;
 }
 
 /* Focus states */
 :focus-visible {
-  outline: 2px solid rgba(6, 182, 212, 0.5);
+  outline: 2px solid rgba(14, 165, 233, 0.5);
   outline-offset: 2px;
 }
 
@@ -89,8 +89,8 @@ code {
 /* Tag colors - dark theme */
 .tag-cve { color: #f87171; background: rgba(239, 68, 68, 0.1); }
 .tag-ioc { color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
-.tag-threat { color: #a78bfa; background: rgba(139, 92, 246, 0.1); }
-.tag-actor { color: #f472b6; background: rgba(236, 72, 153, 0.1); }
+.tag-threat { color: #0ea5e9; background: rgba(14, 165, 233, 0.1); }
+.tag-actor { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
 .tag-malware { color: #34d399; background: rgba(16, 185, 129, 0.1); }
 
 /* Skeleton loading - light theme */
@@ -136,7 +136,7 @@ code {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -144,13 +144,13 @@ code {
 
 /* Glow effects */
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15);
 }
 
 .glow-red {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
 }
 
-.glow-purple {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15);
 }

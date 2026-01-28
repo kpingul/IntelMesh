@@ -333,8 +333,8 @@ export default function ThreadDetailPanel({ item, onClose }: ThreadDetailPanelPr
           <Section
             id="threats"
             title="Threat Intelligence"
-            icon={<AlertTriangle size={14} className="text-purple-500" />}
-            iconColor="bg-purple-50"
+            icon={<AlertTriangle size={14} className="text-slate-500" />}
+            iconColor="bg-slate-50"
             count={item.extracted.threats.length}
           >
             <div className="flex flex-wrap gap-2">
@@ -350,7 +350,7 @@ export default function ThreadDetailPanel({ item, onClose }: ThreadDetailPanelPr
               {item.extracted.actors.map((a, i) => (
                 <span
                   key={`a-${i}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-600 border border-purple-200 text-xs font-medium"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 text-xs font-medium"
                 >
                   {a}
                 </span>
@@ -393,7 +393,7 @@ export default function ThreadDetailPanel({ item, onClose }: ThreadDetailPanelPr
                 >
                   <span className={`text-[10px] px-1.5 py-0.5 rounded mb-2 inline-block ${
                     ev.type === 'cve' ? 'bg-red-100 text-red-600' :
-                    ev.type === 'ioc' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
+                    ev.type === 'ioc' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {ev.entity}
                   </span>

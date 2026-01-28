@@ -83,7 +83,7 @@ export default function FeedsView() {
   const getIocIcon = (type: string) => {
     switch (type) {
       case 'ip': return <Globe size={14} className="text-blue-500" />;
-      case 'hash': return <Hash size={14} className="text-purple-500" />;
+      case 'hash': return <Hash size={14} className="text-slate-500" />;
       case 'url': return <Link2 size={14} className="text-amber-500" />;
       case 'domain': return <Globe size={14} className="text-green-500" />;
       default: return <Shield size={14} className="text-slate-400" />;
@@ -127,7 +127,7 @@ export default function FeedsView() {
               <div className="text-sm text-slate-500">Ransomware CVEs</div>
             </div>
             <div className="bg-white p-4 rounded-lg border border-slate-200">
-              <div className="text-2xl font-semibold text-purple-600">
+              <div className="text-2xl font-semibold text-slate-600">
                 {Object.keys(stats.malware_families || {}).length}
               </div>
               <div className="text-sm text-slate-500">Malware Families</div>

@@ -180,12 +180,12 @@ export default function ThreadsView({ items, stats, isLoading, onItemClick }: Th
                           </span>
                         ))}
                         {item.extracted.malware.slice(0, 2).map(m => (
-                          <span key={m} className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded">
+                          <span key={m} className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded">
                             {m}
                           </span>
                         ))}
                         {item.extracted.actors.slice(0, 2).map(a => (
-                          <span key={a} className="text-[10px] px-1.5 py-0.5 bg-pink-50 text-pink-600 rounded">
+                          <span key={a} className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded">
                             {a}
                           </span>
                         ))}

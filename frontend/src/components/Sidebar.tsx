@@ -82,7 +82,7 @@ export default function Sidebar({
       {/* Logo */}
       <div className="p-4 border-b border-stone-200">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg shadow-slate-500/20">
             <Shield size={14} className="text-white" />
           </div>
           <div>
@@ -104,12 +104,12 @@ export default function Sidebar({
               <span className="text-xs font-medium text-red-600 tabular-nums">{criticalAlerts}</span>
             </div>
 
-            <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 border border-purple-100">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
               <div className="flex items-center gap-2">
-                <Users size={12} className="text-purple-500" />
+                <Users size={12} className="text-slate-500" />
                 <span className="text-[10px] text-stone-500">Actors</span>
               </div>
-              <span className="text-xs font-medium text-purple-600 tabular-nums">{activeActors}</span>
+              <span className="text-xs font-medium text-slate-600 tabular-nums">{activeActors}</span>
             </div>
 
             <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100">
@@ -134,7 +134,7 @@ export default function Sidebar({
                   onClick={() => onViewChange(item.id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-cyan-50 text-cyan-600 border border-cyan-200'
+                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
                       : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
                   }`}
                 >
@@ -142,7 +142,7 @@ export default function Sidebar({
                   <span className="flex-1 text-left">{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded tabular-nums ${
-                      isActive ? 'bg-cyan-100 text-cyan-600' : 'bg-stone-100 text-stone-500'
+                      isActive ? 'bg-cyan-100 text-cyan-700' : 'bg-stone-100 text-stone-500'
                     }`}>
                       {item.badge}
                     </span>
@@ -159,7 +159,7 @@ export default function Sidebar({
         <button
           onClick={onSync}
           disabled={isSyncing}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-cyan-500/20"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white text-xs font-medium rounded-lg hover:from-slate-600 hover:to-slate-700 disabled:opacity-50 transition-all shadow-lg shadow-slate-500/20"
         >
           <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
           {isSyncing ? 'Syncing...' : 'Sync News'}

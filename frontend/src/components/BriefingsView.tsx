@@ -137,11 +137,11 @@ export default function BriefingsView({
               </div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-slate-200 border-l-4 border-l-purple-500">
+          <div className="bg-white p-4 rounded-lg border border-slate-200 border-l-4 border-l-slate-500">
             <div className="flex items-center gap-3">
-              <AlertTriangle size={18} className="text-purple-500" />
+              <AlertTriangle size={18} className="text-slate-500" />
               <div>
-                <div className="text-2xl font-semibold text-purple-600">{periodInsights.threatCount}</div>
+                <div className="text-2xl font-semibold text-slate-600">{periodInsights.threatCount}</div>
                 <div className="text-sm text-slate-500">Threats</div>
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function BriefingsView({
                             </span>
                           ))}
                           {item.extracted.actors.slice(0, 1).map(actor => (
-                            <span key={actor} className="text-[10px] px-1.5 py-0.5 bg-pink-50 text-pink-600 rounded">
+                            <span key={actor} className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded">
                               {actor}
                             </span>
                           ))}
@@ -314,7 +314,7 @@ export default function BriefingsView({
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                       item.extracted.cves.length > 0 ? 'bg-red-500' :
-                      item.extracted.threats.length > 0 ? 'bg-purple-500' : 'bg-blue-500'
+                      item.extracted.threats.length > 0 ? 'bg-slate-500' : 'bg-blue-500'
                     }`} />
                     <h4 className="text-sm text-slate-600 group-hover:text-slate-900 line-clamp-1 transition-colors">
                       {item.title}

@@ -62,10 +62,10 @@ const regionColors: { [key: string]: string } = {
   'usa': '#3b82f6',
   'us': '#3b82f6',
   'china': '#ef4444',
-  'russia': '#8b5cf6',
+  'russia': '#64748b',
   'iran': '#f59e0b',
-  'north korea': '#ec4899',
-  'europe': '#06b6d4',
+  'north korea': '#dc2626',
+  'europe': '#0ea5e9',
   'uk': '#6366f1',
   'india': '#f97316',
   'default': '#64748b',
@@ -83,9 +83,9 @@ const getRegionColor = (region: string) => {
 const getActorColor = (name: string) => {
   const colors = [
     { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500' },
-    { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', dot: 'bg-purple-500' },
+    { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', dot: 'bg-slate-500' },
     { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500' },
-    { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', dot: 'bg-rose-500' },
+    { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', dot: 'bg-cyan-500' },
     { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
   ];
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
@@ -141,8 +141,8 @@ export default function TodayView({
     return [
       { name: 'IPs', value: stats.ioc_breakdown.ips, color: '#f59e0b' },
       { name: 'Domains', value: stats.ioc_breakdown.domains, color: '#3b82f6' },
-      { name: 'Hashes', value: stats.ioc_breakdown.hashes, color: '#8b5cf6' },
-      { name: 'URLs', value: stats.ioc_breakdown.urls, color: '#06b6d4' },
+      { name: 'Hashes', value: stats.ioc_breakdown.hashes, color: '#64748b' },
+      { name: 'URLs', value: stats.ioc_breakdown.urls, color: '#0ea5e9' },
     ].filter(d => d.value > 0);
   }, [stats]);
 
@@ -193,15 +193,15 @@ export default function TodayView({
         <div className="col-span-4 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
           <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-purple-100">
-                <Skull size={14} className="text-purple-600" />
+              <div className="p-1.5 rounded-lg bg-slate-100">
+                <Skull size={14} className="text-slate-600" />
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-stone-900">Threat Actors</h2>
                 <p className="text-[10px] text-stone-400">Active adversaries</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+            <span className="text-xs font-medium text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
               {stats?.all_actors?.length || 0}
             </span>
           </div>
@@ -444,7 +444,7 @@ export default function TodayView({
                             </code>
                           ))}
                           {item.extracted.actors.slice(0, 1).map(a => (
-                            <span key={a} className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded">
+                            <span key={a} className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded">
                               {a}
                             </span>
                           ))}
@@ -493,8 +493,8 @@ export default function TodayView({
           {stats?.all_malware && stats.all_malware.length > 0 && (
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
               <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-rose-100">
-                  <Zap size={14} className="text-rose-600" />
+                <div className="p-1.5 rounded-lg bg-orange-100">
+                  <Zap size={14} className="text-orange-600" />
                 </div>
                 <h2 className="text-sm font-semibold text-stone-900">Malware</h2>
               </div>
@@ -502,7 +502,7 @@ export default function TodayView({
                 {stats.all_malware.slice(0, 8).map((malware) => (
                   <span
                     key={malware}
-                    className="text-[10px] px-2 py-1 bg-rose-50 text-rose-600 rounded-lg border border-rose-200"
+                    className="text-[10px] px-2 py-1 bg-orange-50 text-orange-600 rounded-lg border border-orange-200"
                   >
                     {malware}
                   </span>
@@ -587,10 +587,10 @@ export default function TodayView({
               .map(([tag, count]) => (
                 <span
                   key={tag}
-                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 rounded-full border border-cyan-200 capitalize hover:shadow-md transition-all cursor-default"
+                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-slate-50 to-cyan-50 text-slate-700 rounded-full border border-slate-200 capitalize hover:shadow-md transition-all cursor-default"
                 >
                   {tag.replace(/_/g, ' ')}
-                  <span className="ml-1.5 text-cyan-400">{count}</span>
+                  <span className="ml-1.5 text-slate-400">{count}</span>
                 </span>
               ))}
           </div>

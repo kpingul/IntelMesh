@@ -73,7 +73,7 @@ export default function SettingsView({ onClearData }: SettingsViewProps) {
       case 'technique':
         return <Target size={14} className="text-cyan-500" />;
       case 'actor':
-        return <Shield size={14} className="text-purple-500" />;
+        return <Shield size={14} className="text-slate-500" />;
       case 'category':
         return <Tag size={14} className="text-amber-500" />;
       case 'cve':
@@ -271,8 +271,8 @@ export default function SettingsView({ onClearData }: SettingsViewProps) {
         {/* Preferred Categories */}
         <div className="bg-white rounded-lg border border-slate-200 p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Tag size={18} className="text-purple-600" />
+            <div className="p-2 rounded-lg bg-slate-100">
+              <Tag size={18} className="text-slate-600" />
             </div>
             <div>
               <h2 className="font-medium text-slate-900">Preferred Categories</h2>

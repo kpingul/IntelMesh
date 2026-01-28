@@ -306,7 +306,7 @@ export default function Dashboard() {
                   <button
                     type="submit"
                     disabled={isSearching || !searchQuery.trim()}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-cyan-500 text-white text-xs font-medium rounded-lg hover:bg-cyan-400 disabled:opacity-50 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-700 text-white text-xs font-medium rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
                   >
                     {isSearching ? 'Searching...' : 'Search'}
                   </button>
