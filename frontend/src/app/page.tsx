@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '@/components/Sidebar';
-import TodayView from '@/components/TodayView';
-import BriefingsView from '@/components/BriefingsView';
+import TodayView, { SelectedEntity } from '@/components/TodayView';
 import TrendsView from '@/components/TrendsView';
 import ThreadsView from '@/components/ThreadsView';
 import FeedsView from '@/components/FeedsView';
 import SettingsView from '@/components/SettingsView';
 import ThreadDetailPanel from '@/components/ThreadDetailPanel';
+import EntityDetailPanel from '@/components/EntityDetailPanel';
 import {
   Stats, ThreatItem, CVEEntry, IoCs, ThreatEntry, SearchResult, ViewType
 } from '@/types';
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [iocs, setIocs] = useState<IoCs | null>(null);
   const [threats, setThreats] = useState<ThreatEntry[]>([]);
   const [selectedItem, setSelectedItem] = useState<ThreatItem | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +72,7 @@ export default function Dashboard() {
       if (e.key === 'Escape') {
         setShowSearch(false);
         setSelectedItem(null);
+        setSelectedEntity(null);
       }
     };
 
@@ -157,6 +159,11 @@ export default function Dashboard() {
     console.log('Adding to learning queue:', item.id);
   };
 
+  const handleEntityClick = (entity: SelectedEntity) => {
+    setSelectedEntity(entity);
+    setSelectedItem(null); // Close item panel if open
+  };
+
   const renderMainContent = () => {
     switch (currentView) {
       case 'today':
@@ -167,15 +174,7 @@ export default function Dashboard() {
             isLoading={isLoading}
             onItemClick={handleItemClick}
             onViewThreads={() => setCurrentView('threads')}
-          />
-        );
-      case 'briefings':
-        return (
-          <BriefingsView
-            stats={stats}
-            items={searchResult ? searchResult.results : items}
-            isLoading={isLoading}
-            onItemClick={handleItemClick}
+            onEntityClick={handleEntityClick}
           />
         );
       case 'trends':
@@ -184,6 +183,7 @@ export default function Dashboard() {
             stats={stats}
             items={searchResult ? searchResult.results : items}
             isLoading={isLoading}
+            onEntityClick={handleEntityClick}
           />
         );
       case 'threads':
@@ -207,6 +207,7 @@ export default function Dashboard() {
             isLoading={isLoading}
             onItemClick={handleItemClick}
             onViewThreads={() => setCurrentView('threads')}
+            onEntityClick={handleEntityClick}
           />
         );
     }
@@ -278,6 +279,19 @@ export default function Dashboard() {
               item={selectedItem}
               onClose={() => setSelectedItem(null)}
               onAddToLearning={handleAddToLearning}
+            />
+          )}
+
+          {selectedEntity && (
+            <EntityDetailPanel
+              entity={selectedEntity}
+              items={items}
+              stats={stats}
+              onClose={() => setSelectedEntity(null)}
+              onItemClick={(item) => {
+                handleItemClick(item);
+                setSelectedEntity(null);
+              }}
             />
           )}
         </div>

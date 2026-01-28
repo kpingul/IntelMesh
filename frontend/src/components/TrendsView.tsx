@@ -5,20 +5,34 @@ import {
   TrendingUp,
   AlertTriangle,
   Shield,
-  Target,
   Activity,
-  BarChart3
+  BarChart3,
+  ChevronRight,
+  Crosshair,
+  Building,
+  Zap,
+  Globe,
+  Skull
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { Stats, ThreatItem } from '@/types';
+
+export type EntityType = 'actor' | 'product' | 'sector' | 'cve' | 'malware';
+
+export interface SelectedEntity {
+  type: EntityType;
+  value: string;
+  count?: number;
+}
 
 interface TrendsViewProps {
   stats: Stats | null;
   items: ThreatItem[];
   isLoading: boolean;
+  onEntityClick?: (entity: SelectedEntity) => void;
 }
 
 type TimeRange = '7d' | '30d' | '90d';
@@ -35,7 +49,8 @@ const CHART_COLORS = {
 export default function TrendsView({
   stats,
   items,
-  isLoading
+  isLoading,
+  onEntityClick
 }: TrendsViewProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
 
@@ -70,26 +85,15 @@ export default function TrendsView({
       });
     }
 
-    const totalIocs = stats.ioc_breakdown.ips + stats.ioc_breakdown.domains + stats.ioc_breakdown.hashes + stats.ioc_breakdown.urls;
-    if (totalIocs > 0) {
+    if (stats.all_malware && stats.all_malware.length > 0) {
       insights.push({
-        text: `${totalIocs} indicators of compromise extracted`,
+        text: `${stats.all_malware.length} malware families detected`,
         type: 'rising',
-        metric: 'IoCs'
+        metric: 'Malware'
       });
     }
 
     return insights.slice(0, 4);
-  }, [stats]);
-
-  const iocData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: 'IPs', value: stats.ioc_breakdown.ips, fill: CHART_COLORS.amber },
-      { name: 'Domains', value: stats.ioc_breakdown.domains, fill: CHART_COLORS.blue },
-      { name: 'Hashes', value: stats.ioc_breakdown.hashes, fill: CHART_COLORS.cyan },
-      { name: 'URLs', value: stats.ioc_breakdown.urls, fill: CHART_COLORS.slate },
-    ].filter(d => d.value > 0);
   }, [stats]);
 
   const techniqueData = useMemo(() => {
@@ -114,6 +118,35 @@ export default function TrendsView({
         value: count,
         fullMark: Math.max(...Object.values(stats.tag_counts)),
       }));
+  }, [stats]);
+
+  const productData = useMemo(() => {
+    if (!stats?.product_counts) return [];
+    return Object.entries(stats.product_counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, value]) => ({ name, value }));
+  }, [stats]);
+
+  const sectorData = useMemo(() => {
+    if (!stats?.sector_counts) return [];
+    return Object.entries(stats.sector_counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, value]) => ({ name, value }));
+  }, [stats]);
+
+  const malwareData = useMemo(() => {
+    if (!stats?.all_malware) return [];
+    return stats.all_malware;
+  }, [stats]);
+
+  const geographyData = useMemo(() => {
+    if (!stats?.geography_counts) return [];
+    return Object.entries(stats.geography_counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([region, count]) => ({ region, count }));
   }, [stats]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -250,49 +283,6 @@ export default function TrendsView({
             </div>
           )}
 
-          {/* IoC Breakdown - Donut */}
-          {iocData.length > 0 && (
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Target size={16} className="text-amber-500" />
-                <h3 className="font-medium text-slate-800 text-sm">IoC Distribution</h3>
-              </div>
-              <div className="h-64 flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={iocData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {iocData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap justify-center gap-4 mt-4">
-                {iocData.map((entry, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: entry.fill }}
-                    />
-                    <span className="text-xs text-slate-600">{entry.name}</span>
-                    <span className="text-xs text-slate-400">({entry.value})</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Top CVEs */}
           {stats.top_cves.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 p-4">
@@ -302,20 +292,27 @@ export default function TrendsView({
               </div>
               <div className="space-y-3">
                 {stats.top_cves.slice(0, 6).map(([cve, count], i) => (
-                  <div key={i} className="group">
+                  <button
+                    key={i}
+                    onClick={() => onEntityClick?.({ type: 'cve', value: cve, count })}
+                    className="w-full group text-left"
+                  >
                     <div className="flex items-center justify-between mb-1.5">
                       <code className="text-xs text-red-600 group-hover:text-red-700 transition-colors">
                         {cve}
                       </code>
-                      <span className="text-xs text-slate-400">{count}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-slate-400">{count}</span>
+                        <ChevronRight size={12} className="text-slate-300 group-hover:text-red-500 transition-colors" />
+                      </div>
                     </div>
                     <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-red-500 transition-all duration-500"
+                        className="h-full rounded-full bg-red-500 group-hover:bg-red-600 transition-all duration-500"
                         style={{ width: `${(count / stats.top_cves[0][1]) * 100}%` }}
                       />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -325,22 +322,169 @@ export default function TrendsView({
           {stats.top_threats.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 p-4">
               <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle size={16} className="text-slate-500" />
+                <Skull size={16} className="text-slate-500" />
                 <h3 className="font-medium text-slate-800 text-sm">Threat Actors</h3>
               </div>
               <div className="space-y-3">
                 {stats.top_threats.slice(0, 6).map(([threat, count], i) => (
-                  <div key={i} className="group">
+                  <button
+                    key={i}
+                    onClick={() => onEntityClick?.({ type: 'actor', value: threat, count })}
+                    className="w-full group text-left"
+                  >
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-medium text-slate-600 group-hover:text-slate-700 transition-colors">
                         {threat}
                       </span>
-                      <span className="text-xs text-slate-400">{count}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-slate-400">{count}</span>
+                        <ChevronRight size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+                      </div>
                     </div>
                     <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-slate-500 transition-all duration-500"
+                        className="h-full rounded-full bg-slate-500 group-hover:bg-slate-600 transition-all duration-500"
                         style={{ width: `${(count / stats.top_threats[0][1]) * 100}%` }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Products Targeted */}
+          {productData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Crosshair size={16} className="text-blue-500" />
+                  <h3 className="font-medium text-slate-800 text-sm">Products Targeted</h3>
+                </div>
+                <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  {productData.length} products
+                </span>
+              </div>
+              <div className="space-y-2">
+                {productData.slice(0, 6).map((product, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onEntityClick?.({ type: 'product', value: product.name, count: product.value })}
+                    className="w-full group text-left"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-slate-600 group-hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                        {product.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-slate-400">{product.value}</span>
+                        <ChevronRight size={12} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-blue-500 group-hover:bg-blue-600 transition-all duration-500"
+                        style={{ width: `${(product.value / productData[0].value) * 100}%` }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sectors at Risk */}
+          {sectorData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Building size={16} className="text-emerald-500" />
+                  <h3 className="font-medium text-slate-800 text-sm">Sectors at Risk</h3>
+                </div>
+                <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  {sectorData.length} sectors
+                </span>
+              </div>
+              <div className="space-y-2">
+                {sectorData.slice(0, 6).map((sector, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onEntityClick?.({ type: 'sector', value: sector.name, count: sector.value })}
+                    className="w-full group text-left"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-slate-600 group-hover:text-emerald-600 transition-colors capitalize">
+                        {sector.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-slate-400">{sector.value}</span>
+                        <ChevronRight size={12} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 group-hover:bg-emerald-600 transition-all duration-500"
+                        style={{ width: `${(sector.value / sectorData[0].value) * 100}%` }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Malware Families */}
+          {malwareData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap size={16} className="text-orange-500" />
+                  <h3 className="font-medium text-slate-800 text-sm">Malware Families</h3>
+                </div>
+                <span className="text-[10px] font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                  {malwareData.length} families
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {malwareData.slice(0, 12).map((malware, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onEntityClick?.({ type: 'malware', value: malware })}
+                    className="px-3 py-1.5 bg-orange-50 text-orange-700 text-xs font-medium rounded-lg border border-orange-200 hover:bg-orange-100 hover:border-orange-300 transition-all flex items-center gap-1 group"
+                  >
+                    {malware}
+                    <ChevronRight size={10} className="text-orange-300 group-hover:text-orange-500 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Geographic Distribution */}
+          {geographyData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Globe size={16} className="text-cyan-500" />
+                  <h3 className="font-medium text-slate-800 text-sm">Geographic Distribution</h3>
+                </div>
+                <span className="text-[10px] font-medium text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">
+                  {geographyData.length} regions
+                </span>
+              </div>
+              <div className="space-y-2">
+                {geographyData.slice(0, 6).map((geo, i) => (
+                  <div key={i} className="group">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-slate-600 capitalize">
+                        {geo.region.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-xs text-slate-400">{geo.count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-cyan-500 transition-all duration-500"
+                        style={{ width: `${(geo.count / geographyData[0].count) * 100}%` }}
                       />
                     </div>
                   </div>

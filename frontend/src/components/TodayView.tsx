@@ -14,21 +14,12 @@ import {
   Cpu,
   TrendingUp,
   Skull,
-  ExternalLink,
   Brain,
 } from 'lucide-react';
 import { Stats, ThreatItem } from '@/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
@@ -109,12 +100,21 @@ const countryNameToRegion: Record<string, string> = {
   'Malta': 'eu',
 };
 
+export type EntityType = 'actor' | 'product' | 'sector' | 'cve' | 'malware';
+
+export interface SelectedEntity {
+  type: EntityType;
+  value: string;
+  count?: number;
+}
+
 interface TodayViewProps {
   stats: Stats | null;
   items: ThreatItem[];
   isLoading: boolean;
   onItemClick: (item: ThreatItem) => void;
   onViewThreads: () => void;
+  onEntityClick?: (entity: SelectedEntity) => void;
 }
 
 // Sector icon mapping
@@ -271,7 +271,8 @@ export default function TodayView({
   items,
   isLoading,
   onItemClick,
-  onViewThreads
+  onViewThreads,
+  onEntityClick
 }: TodayViewProps) {
   const [copiedIoc, setCopiedIoc] = useState<string | null>(null);
 
@@ -466,13 +467,15 @@ export default function TodayView({
               stats.all_actors.slice(0, 8).map((actor) => {
                 const colors = getActorColor(actor);
                 return (
-                  <div
+                  <button
                     key={actor}
-                    className={`px-2.5 py-2 rounded-lg ${colors.bg} border ${colors.border} flex items-center gap-2`}
+                    onClick={() => onEntityClick?.({ type: 'actor', value: actor })}
+                    className={`w-full px-2.5 py-2 rounded-lg ${colors.bg} border ${colors.border} flex items-center gap-2 hover:opacity-80 transition-all group`}
                   >
                     <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-                    <span className={`text-xs font-medium ${colors.text} truncate`}>{actor}</span>
-                  </div>
+                    <span className={`text-xs font-medium ${colors.text} truncate flex-1 text-left`}>{actor}</span>
+                    <ChevronRight size={10} className={`${colors.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                  </button>
                 );
               })
             ) : (
@@ -499,33 +502,24 @@ export default function TodayView({
           </div>
           <div className="p-2">
             {productData.length > 0 ? (
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={productData.slice(0, 6)} layout="vertical" margin={{ left: 0, right: 10 }}>
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={70}
-                      tick={{ fontSize: 9, fill: '#78716c' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-stone-900 text-white px-2 py-1 rounded text-[10px]">
-                              {payload[0].payload.fullName}: {payload[0].value}
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 3, 3, 0]} barSize={12} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                {productData.slice(0, 6).map((product) => (
+                  <button
+                    key={product.fullName}
+                    onClick={() => onEntityClick?.({ type: 'product', value: product.fullName, count: product.value })}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 transition-all group"
+                  >
+                    <span className="text-[10px] text-stone-600 truncate w-20 text-left">{product.name}</span>
+                    <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all group-hover:bg-blue-600"
+                        style={{ width: `${(product.value / productData[0].value) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-stone-400 tabular-nums w-6 text-right">{product.value}</span>
+                    <ChevronRight size={10} className="text-stone-300 group-hover:text-blue-500 transition-colors" />
+                  </button>
+                ))}
               </div>
             ) : (
               <div className="p-4 text-center">
@@ -551,34 +545,24 @@ export default function TodayView({
           </div>
           <div className="p-2">
             {sectorData.length > 0 ? (
-              <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sectorData.slice(0, 6)} layout="vertical" margin={{ left: 0, right: 10 }}>
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={75}
-                      tick={{ fontSize: 9, fill: '#78716c' }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-stone-900 text-white px-2 py-1 rounded text-[10px]">
-                              {payload[0].payload.name}: {payload[0].value}
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#10b981" radius={[0, 3, 3, 0]} barSize={12} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                {sectorData.slice(0, 6).map((sector) => (
+                  <button
+                    key={sector.name}
+                    onClick={() => onEntityClick?.({ type: 'sector', value: sector.name, count: sector.value })}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-emerald-50 transition-all group"
+                  >
+                    <span className="text-[10px] text-stone-600 truncate w-20 text-left capitalize">{sector.name}</span>
+                    <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all group-hover:bg-emerald-600"
+                        style={{ width: `${(sector.value / sectorData[0].value) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-stone-400 tabular-nums w-6 text-right">{sector.value}</span>
+                    <ChevronRight size={10} className="text-stone-300 group-hover:text-emerald-500 transition-colors" />
+                  </button>
+                ))}
               </div>
             ) : (
               <div className="p-4 text-center">
@@ -602,10 +586,17 @@ export default function TodayView({
             <div className="p-2 space-y-1">
               {stats?.top_cves && stats.top_cves.length > 0 ? (
                 stats.top_cves.slice(0, 4).map(([cve, count]) => (
-                  <div key={cve} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                  <button
+                    key={cve}
+                    onClick={() => onEntityClick?.({ type: 'cve', value: cve, count })}
+                    className="w-full flex items-center justify-between p-1.5 rounded-lg hover:bg-red-50 transition-colors group"
+                  >
                     <code className="text-[10px] text-red-600 font-medium">{cve}</code>
-                    <span className="text-[9px] text-stone-400 bg-stone-100 px-1 py-0.5 rounded">{count}</span>
-                  </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-stone-400 bg-stone-100 px-1 py-0.5 rounded">{count}</span>
+                      <ChevronRight size={10} className="text-stone-300 group-hover:text-red-500 transition-colors" />
+                    </div>
+                  </button>
                 ))
               ) : (
                 <div className="p-2 text-center">
@@ -631,9 +622,13 @@ export default function TodayView({
               </div>
               <div className="p-2 flex flex-wrap gap-1">
                 {stats.all_malware.slice(0, 6).map((malware) => (
-                  <span key={malware} className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded border border-orange-200">
+                  <button
+                    key={malware}
+                    onClick={() => onEntityClick?.({ type: 'malware', value: malware })}
+                    className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded border border-orange-200 hover:bg-orange-100 hover:border-orange-300 transition-colors"
+                  >
                     {malware}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>

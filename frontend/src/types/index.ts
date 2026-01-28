@@ -106,9 +106,7 @@ export interface SearchResult {
 }
 
 // View types
-export type ViewType = 'today' | 'briefings' | 'trends' | 'threads' | 'feeds' | 'settings';
-
-export type BriefingPeriod = 'daily' | 'weekly' | 'monthly';
+export type ViewType = 'today' | 'trends' | 'threads' | 'feeds' | 'settings';
 
 // Feed types
 export interface FeedIOC {

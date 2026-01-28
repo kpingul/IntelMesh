@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  FileText,
   TrendingUp,
   Layers,
   Database,
@@ -10,9 +9,6 @@ import {
   RefreshCw,
   Upload,
   Shield,
-  AlertTriangle,
-  Users,
-  Crosshair,
 } from 'lucide-react';
 import { ViewType, Stats } from '@/types';
 import { format } from 'date-fns';
@@ -43,9 +39,9 @@ export default function Sidebar({
       icon: <Activity size={16} />,
     },
     {
-      id: 'briefings',
-      label: 'Briefings',
-      icon: <FileText size={16} />,
+      id: 'trends',
+      label: 'Analysis',
+      icon: <TrendingUp size={16} />,
     },
     {
       id: 'threads',
@@ -58,11 +54,6 @@ export default function Sidebar({
       label: 'Threat Feeds',
       icon: <Database size={16} />,
     },
-    {
-      id: 'trends',
-      label: 'Analysis',
-      icon: <TrendingUp size={16} />,
-    },
   ];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,11 +62,6 @@ export default function Sidebar({
       e.target.value = '';
     }
   };
-
-  // Calculate impactful metrics
-  const criticalAlerts = stats?.top_cves?.length || 0;
-  const activeActors = stats?.all_actors?.length || 0;
-  const attackSurface = stats?.product_counts ? Object.keys(stats.product_counts).length : 0;
 
   return (
     <aside className="w-52 bg-white border-r border-stone-200 flex flex-col h-full">
@@ -91,37 +77,6 @@ export default function Sidebar({
           </div>
         </div>
       </div>
-
-      {/* Compact Stats */}
-      {stats && (
-        <div className="p-3 border-b border-stone-200">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={12} className="text-red-500" />
-                <span className="text-[10px] text-stone-500">Critical</span>
-              </div>
-              <span className="text-xs font-medium text-red-600 tabular-nums">{criticalAlerts}</span>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
-              <div className="flex items-center gap-2">
-                <Users size={12} className="text-slate-500" />
-                <span className="text-[10px] text-stone-500">Actors</span>
-              </div>
-              <span className="text-xs font-medium text-slate-600 tabular-nums">{activeActors}</span>
-            </div>
-
-            <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100">
-              <div className="flex items-center gap-2">
-                <Crosshair size={12} className="text-blue-500" />
-                <span className="text-[10px] text-stone-500">Products</span>
-              </div>
-              <span className="text-xs font-medium text-blue-600 tabular-nums">{attackSurface}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-2 overflow-y-auto">
