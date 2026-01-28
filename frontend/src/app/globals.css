@@ -14,8 +14,8 @@ html {
 }
 
 body {
-  background: #f8fafc;
-  color: #1e293b;
+  background: #fafaf9;
+  color: #1c1917;
   font-family: 'Fragment Mono', 'SF Mono', Monaco, 'Courier New', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,38 +25,38 @@ body {
 
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: -0.02em;
 }
 
-/* Simple scrollbar */
+/* Light scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgba(241, 245, 249, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(148, 163, 184, 0.5);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(100, 116, 139, 0.7);
 }
 
 /* Selection */
 ::selection {
-  background: #3b82f6;
+  background: rgba(6, 182, 212, 0.3);
   color: white;
 }
 
 /* Focus states */
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid rgba(6, 182, 212, 0.5);
   outline-offset: 2px;
 }
 
@@ -70,32 +70,32 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Code */
+/* Code - light variant */
 code {
   font-family: 'Fragment Mono', 'SF Mono', Monaco, 'Courier New', monospace;
   font-size: 0.9em;
-  background: #f1f5f9;
+  background: rgba(241, 245, 249, 0.8);
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
 }
 
-/* Severity colors */
-.severity-critical { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
-.severity-high { color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
-.severity-medium { color: #d97706; background: #fffbeb; border-color: #fde68a; }
-.severity-low { color: #16a34a; background: #f0fdf4; border-color: #bbf7d0; }
-.severity-info { color: #0284c7; background: #f0f9ff; border-color: #bae6fd; }
+/* Severity colors - dark theme */
+.severity-critical { color: #f87171; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+.severity-high { color: #fb923c; background: rgba(249, 115, 22, 0.1); border-color: rgba(249, 115, 22, 0.3); }
+.severity-medium { color: #fbbf24; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); }
+.severity-low { color: #4ade80; background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); }
+.severity-info { color: #38bdf8; background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3); }
 
-/* Tag colors */
-.tag-cve { color: #dc2626; background: #fef2f2; }
-.tag-ioc { color: #d97706; background: #fffbeb; }
-.tag-threat { color: #7c3aed; background: #f5f3ff; }
-.tag-actor { color: #db2777; background: #fdf2f8; }
-.tag-malware { color: #059669; background: #ecfdf5; }
+/* Tag colors - dark theme */
+.tag-cve { color: #f87171; background: rgba(239, 68, 68, 0.1); }
+.tag-ioc { color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
+.tag-threat { color: #a78bfa; background: rgba(139, 92, 246, 0.1); }
+.tag-actor { color: #f472b6; background: rgba(236, 72, 153, 0.1); }
+.tag-malware { color: #34d399; background: rgba(16, 185, 129, 0.1); }
 
-/* Skeleton loading */
+/* Skeleton loading - light theme */
 .skeleton {
-  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.5) 0%, rgba(241, 245, 249, 0.8) 50%, rgba(226, 232, 240, 0.5) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -105,7 +105,7 @@ code {
   100% { background-position: -200% 0; }
 }
 
-/* Simple animations */
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -116,10 +116,41 @@ code {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.2s ease-out;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Tabular numbers for data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
 }

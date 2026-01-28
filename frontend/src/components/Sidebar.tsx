@@ -40,28 +40,28 @@ export default function Sidebar({
     {
       id: 'today',
       label: 'Dashboard',
-      icon: <Activity size={18} />,
+      icon: <Activity size={16} />,
     },
     {
       id: 'briefings',
       label: 'Briefings',
-      icon: <FileText size={18} />,
+      icon: <FileText size={16} />,
     },
     {
       id: 'threads',
       label: 'Articles',
-      icon: <Layers size={18} />,
+      icon: <Layers size={16} />,
       badge: stats?.total_items
     },
     {
       id: 'feeds',
       label: 'Threat Feeds',
-      icon: <Database size={18} />,
+      icon: <Database size={16} />,
     },
     {
       id: 'trends',
       label: 'Analysis',
-      icon: <TrendingUp size={18} />,
+      icon: <TrendingUp size={16} />,
     },
   ];
 
@@ -78,49 +78,46 @@ export default function Sidebar({
   const attackSurface = stats?.product_counts ? Object.keys(stats.product_counts).length : 0;
 
   return (
-    <aside className="w-56 bg-white border-r border-slate-200 flex flex-col h-full">
+    <aside className="w-52 bg-white border-r border-stone-200 flex flex-col h-full">
       {/* Logo */}
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-stone-200">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
-            <Shield size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <Shield size={14} className="text-white" />
           </div>
           <div>
-            <h1 className="font-semibold text-slate-900 tracking-tight">IntelMesh</h1>
-            <p className="text-[10px] text-slate-400 font-medium">{format(new Date(), 'MMM d, yyyy')}</p>
+            <h1 className="font-medium text-stone-900 tracking-tight text-sm">IntelMesh</h1>
+            <p className="text-[10px] text-stone-400">{format(new Date(), 'MMM d, yyyy')}</p>
           </div>
         </div>
       </div>
 
-      {/* Impactful Stats */}
+      {/* Compact Stats */}
       {stats && (
-        <div className="p-3 border-b border-slate-200">
+        <div className="p-3 border-b border-stone-200">
           <div className="space-y-2">
-            {/* Critical Alerts */}
-            <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg border border-red-100">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
               <div className="flex items-center gap-2">
-                <AlertTriangle size={14} className="text-red-500" />
-                <span className="text-xs font-medium text-slate-700">Critical Vulns</span>
+                <AlertTriangle size={12} className="text-red-500" />
+                <span className="text-[10px] text-stone-500">Critical</span>
               </div>
-              <span className="text-sm font-semibold text-red-600">{criticalAlerts}</span>
+              <span className="text-xs font-medium text-red-600 tabular-nums">{criticalAlerts}</span>
             </div>
 
-            {/* Active Threat Actors */}
-            <div className="flex items-center justify-between p-2 bg-purple-50 rounded-lg border border-purple-100">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 border border-purple-100">
               <div className="flex items-center gap-2">
-                <Users size={14} className="text-purple-500" />
-                <span className="text-xs font-medium text-slate-700">Active Actors</span>
+                <Users size={12} className="text-purple-500" />
+                <span className="text-[10px] text-stone-500">Actors</span>
               </div>
-              <span className="text-sm font-semibold text-purple-600">{activeActors}</span>
+              <span className="text-xs font-medium text-purple-600 tabular-nums">{activeActors}</span>
             </div>
 
-            {/* Attack Surface */}
-            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100">
               <div className="flex items-center gap-2">
-                <Crosshair size={14} className="text-blue-500" />
-                <span className="text-xs font-medium text-slate-700">Products at Risk</span>
+                <Crosshair size={12} className="text-blue-500" />
+                <span className="text-[10px] text-stone-500">Products</span>
               </div>
-              <span className="text-sm font-semibold text-blue-600">{attackSurface}</span>
+              <span className="text-xs font-medium text-blue-600 tabular-nums">{attackSurface}</span>
             </div>
           </div>
         </div>
@@ -135,17 +132,17 @@ export default function Sidebar({
               <li key={item.id}>
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-cyan-50 text-cyan-600 border border-cyan-200'
+                      : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
                   }`}
                 >
                   {item.icon}
                   <span className="flex-1 text-left">{item.label}</span>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      isActive ? 'bg-white/20' : 'bg-slate-200 text-slate-600'
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded tabular-nums ${
+                      isActive ? 'bg-cyan-100 text-cyan-600' : 'bg-stone-100 text-stone-500'
                     }`}>
                       {item.badge}
                     </span>
@@ -158,18 +155,18 @@ export default function Sidebar({
       </nav>
 
       {/* Actions */}
-      <div className="p-3 border-t border-slate-200 space-y-2">
+      <div className="p-3 border-t border-stone-200 space-y-2">
         <button
           onClick={onSync}
           disabled={isSyncing}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-cyan-500/20"
         >
-          <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+          <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
           {isSyncing ? 'Syncing...' : 'Sync News'}
         </button>
 
-        <label className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 cursor-pointer transition-colors">
-          <Upload size={14} />
+        <label className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-stone-100 text-stone-600 text-xs font-medium rounded-lg hover:bg-stone-200 cursor-pointer transition-colors border border-stone-200">
+          <Upload size={12} />
           Upload PDF
           <input
             type="file"
@@ -183,16 +180,16 @@ export default function Sidebar({
       </div>
 
       {/* Settings */}
-      <div className="p-2 border-t border-slate-200">
+      <div className="p-2 border-t border-stone-200">
         <button
           onClick={() => onViewChange('settings')}
-          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
             currentView === 'settings'
-              ? 'bg-slate-100 text-slate-900'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-stone-100 text-stone-900'
+              : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
           }`}
         >
-          <Settings size={18} />
+          <Settings size={16} />
           <span>Settings</span>
         </button>
       </div>
