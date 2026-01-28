@@ -5,20 +5,17 @@ import {
   AlertTriangle,
   ChevronRight,
   Shield,
-  Target,
-  Copy,
-  Check,
   Globe,
   Building,
   Users,
   Crosshair,
   Zap,
   Radio,
-  MapPin,
   Cpu,
   TrendingUp,
   Skull,
   ExternalLink,
+  Brain,
 } from 'lucide-react';
 import { Stats, ThreatItem } from '@/types';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -32,7 +29,85 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
 } from 'recharts';
+import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  Marker,
+} from 'react-simple-maps';
+
+// Country coordinates for labels
+const countryCoordinates: Record<string, [number, number]> = {
+  'russia': [100, 60],
+  'china': [105, 35],
+  'usa': [-95, 40],
+  'uk': [-2, 54],
+  'india': [78, 22],
+  'japan': [138, 36],
+  'australia': [134, -25],
+  'north_korea': [127, 40],
+  'south_korea': [127, 36],
+  'ukraine': [32, 49],
+  'israel': [35, 31],
+  'iran': [53, 32],
+  'eu': [10, 50],
+};
+
+const geoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+// Map country names (from topology) to our region keys
+const countryNameToRegion: Record<string, string> = {
+  // Direct matches
+  'Russia': 'russia',
+  'China': 'china',
+  'North Korea': 'north_korea',
+  'Dem. Rep. Korea': 'north_korea',
+  'Iran': 'iran',
+  'United States': 'usa',
+  'United States of America': 'usa',
+  'United Kingdom': 'uk',
+  'Israel': 'israel',
+  'Ukraine': 'ukraine',
+  'India': 'india',
+  'Australia': 'australia',
+  'Japan': 'japan',
+  'South Korea': 'south_korea',
+  'Korea': 'south_korea',
+  // EU countries
+  'Germany': 'eu',
+  'France': 'eu',
+  'Italy': 'eu',
+  'Spain': 'eu',
+  'Netherlands': 'eu',
+  'Belgium': 'eu',
+  'Poland': 'eu',
+  'Sweden': 'eu',
+  'Austria': 'eu',
+  'Portugal': 'eu',
+  'Greece': 'eu',
+  'Czech Republic': 'eu',
+  'Czechia': 'eu',
+  'Romania': 'eu',
+  'Hungary': 'eu',
+  'Finland': 'eu',
+  'Denmark': 'eu',
+  'Ireland': 'eu',
+  'Bulgaria': 'eu',
+  'Croatia': 'eu',
+  'Slovakia': 'eu',
+  'Lithuania': 'eu',
+  'Slovenia': 'eu',
+  'Latvia': 'eu',
+  'Estonia': 'eu',
+  'Cyprus': 'eu',
+  'Luxembourg': 'eu',
+  'Malta': 'eu',
+};
 
 interface TodayViewProps {
   stats: Stats | null;
@@ -49,34 +124,133 @@ const sectorIcons: { [key: string]: React.ReactNode } = {
   'healthcare': <Shield size={12} />,
   'government': <Building size={12} />,
   'energy': <Zap size={12} />,
-  'manufacturing': <Target size={12} />,
+  'manufacturing': <Crosshair size={12} />,
   'retail': <Building size={12} />,
   'telecommunications': <Radio size={12} />,
   'education': <Building size={12} />,
   'defense': <Shield size={12} />,
 };
 
-// Region flag/color mapping
-const regionColors: { [key: string]: string } = {
-  'united states': '#3b82f6',
-  'usa': '#3b82f6',
-  'us': '#3b82f6',
-  'china': '#ef4444',
-  'russia': '#64748b',
-  'iran': '#f59e0b',
-  'north korea': '#dc2626',
-  'europe': '#0ea5e9',
-  'uk': '#6366f1',
-  'india': '#f97316',
-  'default': '#64748b',
+// Get threat count for a country name
+const getCountryThreatCount = (countryName: string, geographyCounts: Record<string, number>): number => {
+  const region = countryNameToRegion[countryName];
+  if (region && geographyCounts[region]) {
+    return geographyCounts[region];
+  }
+  return 0;
 };
 
-const getRegionColor = (region: string) => {
-  const lower = region.toLowerCase();
-  for (const [key, color] of Object.entries(regionColors)) {
-    if (lower.includes(key)) return color;
-  }
-  return regionColors.default;
+// Get color intensity based on threat count
+const getThreatColorIntensity = (count: number, maxCount: number): string => {
+  if (count === 0 || maxCount === 0) return '#e2e8f0'; // slate-200
+  const intensity = count / maxCount;
+  if (intensity > 0.8) return '#dc2626'; // red-600
+  if (intensity > 0.6) return '#ef4444'; // red-500
+  if (intensity > 0.4) return '#f87171'; // red-400
+  if (intensity > 0.2) return '#fca5a5'; // red-300
+  return '#fecaca'; // red-200
+};
+
+// World Map Component
+interface WorldMapProps {
+  geographyCounts: Record<string, number>;
+}
+
+const WorldMap = ({ geographyCounts }: WorldMapProps) => {
+  const [tooltipContent, setTooltipContent] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  const maxCount = useMemo(() => Math.max(...Object.values(geographyCounts), 1), [geographyCounts]);
+
+  // Get top regions for labels
+  const topRegions = useMemo(() => {
+    return Object.entries(geographyCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .filter(([region]) => countryCoordinates[region]);
+  }, [geographyCounts]);
+
+  return (
+    <div className="relative h-[350px] w-full overflow-hidden">
+      <ComposableMap
+        projection="geoMercator"
+        projectionConfig={{
+          scale: 130,
+          center: [20, 30],
+        }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Geographies geography={geoUrl}>
+          {({ geographies }) =>
+            geographies.map((geo) => {
+              const countryName = geo.properties.name || '';
+              const count = getCountryThreatCount(countryName, geographyCounts);
+              const fillColor = count > 0 ? getThreatColorIntensity(count, maxCount) : '#f1f5f9';
+
+              return (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  fill={fillColor}
+                  stroke="#94a3b8"
+                  strokeWidth={0.3}
+                  style={{
+                    default: { outline: 'none' },
+                    hover: { outline: 'none', fill: count > 0 ? '#991b1b' : '#e2e8f0', cursor: 'pointer' },
+                    pressed: { outline: 'none' },
+                  }}
+                  onMouseEnter={(e) => {
+                    setTooltipContent(count > 0 ? `${countryName}: ${count} threats` : countryName);
+                    setTooltipPosition({ x: e.clientX, y: e.clientY });
+                  }}
+                  onMouseLeave={() => setTooltipContent(null)}
+                  onMouseMove={(e) => setTooltipPosition({ x: e.clientX, y: e.clientY })}
+                />
+              );
+            })
+          }
+        </Geographies>
+        {/* Country labels with threat counts */}
+        {topRegions.map(([region, count]) => {
+          const coords = countryCoordinates[region];
+          if (!coords) return null;
+          const label = region === 'usa' ? 'US' :
+                       region === 'uk' ? 'UK' :
+                       region === 'north_korea' ? 'N.Korea' :
+                       region === 'south_korea' ? 'S.Korea' :
+                       region.charAt(0).toUpperCase() + region.slice(1);
+          return (
+            <Marker key={region} coordinates={coords}>
+              <circle r={4} fill="#dc2626" stroke="#fff" strokeWidth={1} />
+              <text
+                textAnchor="middle"
+                y={-8}
+                style={{
+                  fontSize: '8px',
+                  fontWeight: 600,
+                  fill: '#1e293b',
+                  textShadow: '0 0 3px #fff, 0 0 3px #fff',
+                }}
+              >
+                {label}: {count}
+              </text>
+            </Marker>
+          );
+        })}
+      </ComposableMap>
+      {tooltipContent && (
+        <div
+          className="fixed z-50 bg-stone-900 text-white text-xs px-3 py-1.5 rounded shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 12,
+            top: tooltipPosition.y - 35,
+          }}
+        >
+          {tooltipContent}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Threat actor severity colors (pseudo-random based on name)
@@ -129,23 +303,6 @@ export default function TodayView({
       .map(([name, value]) => ({ name, value }));
   }, [stats]);
 
-  const regionData = useMemo(() => {
-    if (!stats?.geography_counts) return [];
-    return Object.entries(stats.geography_counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, value]) => ({ name, value, color: getRegionColor(name) }));
-  }, [stats]);
-
-  const iocData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: 'IPs', value: stats.ioc_breakdown.ips, color: '#f59e0b' },
-      { name: 'Domains', value: stats.ioc_breakdown.domains, color: '#3b82f6' },
-      { name: 'Hashes', value: stats.ioc_breakdown.hashes, color: '#64748b' },
-      { name: 'URLs', value: stats.ioc_breakdown.urls, color: '#0ea5e9' },
-    ].filter(d => d.value > 0);
-  }, [stats]);
-
   const getSeverity = (item: ThreatItem) => {
     if (item.extracted.cves.length > 0) return 'critical';
     if (item.extracted.malware.length > 0 || item.extracted.actors.length > 0) return 'high';
@@ -186,212 +343,16 @@ export default function TodayView({
         </div>
       </div>
 
-      {/* Main Grid - Intelligence Tiles */}
-      <div className="grid grid-cols-12 gap-4 mb-6">
-
-        {/* Threat Actors - Large tile */}
-        <div className="col-span-4 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-slate-100">
-                <Skull size={14} className="text-slate-600" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-stone-900">Threat Actors</h2>
-                <p className="text-[10px] text-stone-400">Active adversaries</p>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-slate-600 bg-slate-50 px-2 py-1 rounded-full">
-              {stats?.all_actors?.length || 0}
-            </span>
-          </div>
-          <div className="p-3 space-y-2 max-h-[280px] overflow-y-auto">
-            {stats?.all_actors && stats.all_actors.length > 0 ? (
-              stats.all_actors.slice(0, 10).map((actor, i) => {
-                const colors = getActorColor(actor);
-                return (
-                  <div
-                    key={actor}
-                    className={`p-3 rounded-xl ${colors.bg} border ${colors.border} flex items-center gap-3 group hover:shadow-md transition-all cursor-default`}
-                    style={{ animationDelay: `${i * 50}ms` }}
-                  >
-                    <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                    <span className={`text-sm font-medium ${colors.text} flex-1`}>{actor}</span>
-                    <ExternalLink size={12} className="text-stone-300 group-hover:text-stone-500 transition-colors" />
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-6 text-center">
-                <Users size={24} className="mx-auto text-stone-300 mb-2" />
-                <p className="text-stone-400 text-xs">No actors identified</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Products Under Attack */}
-        <div className="col-span-4 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-blue-100">
-                <Crosshair size={14} className="text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-stone-900">Products Targeted</h2>
-                <p className="text-[10px] text-stone-400">Attack surface</p>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-              {productData.length}
-            </span>
-          </div>
-          <div className="p-3">
-            {productData.length > 0 ? (
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={productData} layout="vertical" margin={{ left: 0, right: 20 }}>
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={80}
-                      tick={{ fontSize: 10, fill: '#78716c' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-stone-900 text-white px-2 py-1 rounded text-xs">
-                              {payload[0].payload.fullName}: {payload[0].value}
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      fill="#3b82f6"
-                      radius={[0, 4, 4, 0]}
-                      barSize={16}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="p-6 text-center">
-                <Crosshair size={24} className="mx-auto text-stone-300 mb-2" />
-                <p className="text-stone-400 text-xs">No products identified</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sectors & Regions Stack */}
-        <div className="col-span-4 space-y-4">
-          {/* Sectors */}
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-100">
-                  <Building size={14} className="text-emerald-600" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-stone-900">Sectors at Risk</h2>
-                  <p className="text-[10px] text-stone-400">Industry targets</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-3">
-              {sectorData.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {sectorData.map(({ name, value }) => (
-                    <div
-                      key={name}
-                      className="flex items-center gap-2 px-3 py-2 bg-stone-50 rounded-xl border border-stone-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all group"
-                    >
-                      <span className="text-stone-400 group-hover:text-emerald-500 transition-colors">
-                        {sectorIcons[name.toLowerCase()] || <Building size={12} />}
-                      </span>
-                      <span className="text-xs font-medium text-stone-700 capitalize">{name}</span>
-                      <span className="text-[10px] text-stone-400 bg-white px-1.5 py-0.5 rounded-full border border-stone-200">
-                        {value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <Building size={20} className="mx-auto text-stone-300 mb-1" />
-                  <p className="text-stone-400 text-xs">No sectors identified</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Regions */}
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-cyan-100">
-                  <Globe size={14} className="text-cyan-600" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-stone-900">Geographic Spread</h2>
-                  <p className="text-[10px] text-stone-400">Affected regions</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-3">
-              {regionData.length > 0 ? (
-                <div className="space-y-2">
-                  {regionData.slice(0, 5).map(({ name, value, color }) => (
-                    <div key={name} className="flex items-center gap-3">
-                      <div
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="text-xs text-stone-700 flex-1 capitalize">{name}</span>
-                      <div className="flex-1 h-1.5 bg-stone-100 rounded-full overflow-hidden max-w-[80px]">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(value / regionData[0].value) * 100}%`,
-                            backgroundColor: color
-                          }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-stone-400 tabular-nums w-6 text-right">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 text-center">
-                  <MapPin size={20} className="mx-auto text-stone-300 mb-1" />
-                  <p className="text-stone-400 text-xs">No regions identified</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row - Priority Intel & CVEs */}
-      <div className="grid grid-cols-12 gap-4">
+      {/* Row 1: Priority Intel + Map */}
+      <div className="grid grid-cols-12 gap-4 mb-4">
         {/* Priority Intelligence */}
         <div className="col-span-6 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+          <div className="px-4 py-2.5 border-b border-stone-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-red-100">
                 <AlertTriangle size={14} className="text-red-600" />
               </div>
-              <div>
-                <h2 className="text-sm font-semibold text-stone-900">Priority Intelligence</h2>
-                <p className="text-[10px] text-stone-400">High-severity alerts</p>
-              </div>
+              <h2 className="text-sm font-semibold text-stone-900">Priority Intelligence</h2>
             </div>
             <button
               onClick={onViewThreads}
@@ -400,12 +361,11 @@ export default function TodayView({
               View All <ChevronRight size={12} />
             </button>
           </div>
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-stone-100 max-h-[350px] overflow-y-auto">
             {priorityIntel.length === 0 ? (
-              <div className="p-8 text-center">
-                <Radio size={24} className="mx-auto text-stone-300 mb-2" />
-                <p className="text-stone-400 text-sm">No priority intel</p>
-                <p className="text-stone-300 text-xs">Sync feeds to fetch threats</p>
+              <div className="p-6 text-center">
+                <Radio size={20} className="mx-auto text-stone-300 mb-2" />
+                <p className="text-stone-400 text-xs">No priority intel</p>
               </div>
             ) : (
               priorityIntel.map((item) => {
@@ -414,43 +374,31 @@ export default function TodayView({
                   <button
                     key={item.id}
                     onClick={() => onItemClick(item)}
-                    className="w-full p-4 text-left hover:bg-stone-50 transition-all group"
+                    className="w-full p-3 text-left hover:bg-stone-50 transition-all group"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-1.5 h-12 rounded-full flex-shrink-0 ${
+                    <div className="flex items-start gap-2">
+                      <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
                         severity === 'critical' ? 'bg-red-500' :
                         severity === 'high' ? 'bg-orange-500' : 'bg-amber-500'
                       }`} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded uppercase font-semibold ${
                             severity === 'critical' ? 'bg-red-100 text-red-700' :
                             severity === 'high' ? 'bg-orange-100 text-orange-700' :
                             'bg-amber-100 text-amber-700'
                           }`}>
                             {severity}
                           </span>
-                          <span className="text-[10px] text-stone-400">
+                          <span className="text-[9px] text-stone-400">
                             {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
                           </span>
                         </div>
-                        <h3 className="text-sm text-stone-800 group-hover:text-stone-900 line-clamp-1">
+                        <h3 className="text-xs text-stone-800 group-hover:text-stone-900 line-clamp-2">
                           {item.title}
                         </h3>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {item.extracted.cves.slice(0, 2).map(cve => (
-                            <code key={cve} className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded">
-                              {cve}
-                            </code>
-                          ))}
-                          {item.extracted.actors.slice(0, 1).map(a => (
-                            <span key={a} className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded">
-                              {a}
-                            </span>
-                          ))}
-                        </div>
                       </div>
-                      <ChevronRight size={14} className="text-stone-300 group-hover:text-cyan-500 transition-colors mt-1 flex-shrink-0" />
+                      <ChevronRight size={12} className="text-stone-300 group-hover:text-cyan-500 transition-colors flex-shrink-0" />
                     </div>
                   </button>
                 );
@@ -459,31 +407,209 @@ export default function TodayView({
           </div>
         </div>
 
-        {/* Right Column - CVEs & IoCs */}
-        <div className="col-span-3 space-y-4">
-          {/* Top CVEs */}
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-red-100">
-                <Shield size={14} className="text-red-600" />
+        {/* World Map */}
+        <div className="col-span-6 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+          <div className="px-3 py-2 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-lg bg-cyan-100">
+                <Globe size={12} className="text-cyan-600" />
               </div>
-              <div>
-                <h2 className="text-sm font-semibold text-stone-900">Critical CVEs</h2>
-                <p className="text-[10px] text-stone-400">Exploited vulnerabilities</p>
+              <h2 className="text-xs font-semibold text-stone-900">Cyber Global Map</h2>
+            </div>
+            <div className="flex items-center gap-2 text-[8px] text-stone-400">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-1.5 rounded-sm bg-red-200" />
+                <span>Low</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-1.5 rounded-sm bg-red-400" />
+                <span>Med</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-1.5 rounded-sm bg-red-600" />
+                <span>High</span>
               </div>
             </div>
-            <div className="p-3 space-y-2">
+          </div>
+          <div>
+            {stats?.geography_counts && Object.keys(stats.geography_counts).length > 0 ? (
+              <WorldMap geographyCounts={stats.geography_counts} />
+            ) : (
+              <div className="h-[340px] flex items-center justify-center">
+                <div className="text-center">
+                  <Globe size={28} className="mx-auto text-stone-300 mb-2" />
+                  <p className="text-stone-400 text-xs">No geographic data</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Actors, Products, Sectors, CVEs */}
+      <div className="grid grid-cols-12 gap-4 mb-4">
+        {/* Threat Actors */}
+        <div className="col-span-3 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+          <div className="px-3 py-2.5 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-slate-100">
+                <Skull size={12} className="text-slate-600" />
+              </div>
+              <h2 className="text-xs font-semibold text-stone-900">Threat Actors</h2>
+            </div>
+            <span className="text-[10px] font-medium text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded-full">
+              {stats?.all_actors?.length || 0}
+            </span>
+          </div>
+          <div className="p-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+            {stats?.all_actors && stats.all_actors.length > 0 ? (
+              stats.all_actors.slice(0, 8).map((actor) => {
+                const colors = getActorColor(actor);
+                return (
+                  <div
+                    key={actor}
+                    className={`px-2.5 py-2 rounded-lg ${colors.bg} border ${colors.border} flex items-center gap-2`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
+                    <span className={`text-xs font-medium ${colors.text} truncate`}>{actor}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="p-4 text-center">
+                <Users size={18} className="mx-auto text-stone-300 mb-1" />
+                <p className="text-stone-400 text-[10px]">No actors</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Products Targeted */}
+        <div className="col-span-3 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+          <div className="px-3 py-2.5 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-blue-100">
+                <Crosshair size={12} className="text-blue-600" />
+              </div>
+              <h2 className="text-xs font-semibold text-stone-900">Products Targeted</h2>
+            </div>
+            <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+              {productData.length}
+            </span>
+          </div>
+          <div className="p-2">
+            {productData.length > 0 ? (
+              <div className="h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={productData.slice(0, 6)} layout="vertical" margin={{ left: 0, right: 10 }}>
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={70}
+                      tick={{ fontSize: 9, fill: '#78716c' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-stone-900 text-white px-2 py-1 rounded text-[10px]">
+                              {payload[0].payload.fullName}: {payload[0].value}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 3, 3, 0]} barSize={12} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="p-4 text-center">
+                <Crosshair size={18} className="mx-auto text-stone-300 mb-1" />
+                <p className="text-stone-400 text-[10px]">No products</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sectors at Risk */}
+        <div className="col-span-3 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+          <div className="px-3 py-2.5 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-100">
+                <Building size={12} className="text-emerald-600" />
+              </div>
+              <h2 className="text-xs font-semibold text-stone-900">Sectors at Risk</h2>
+            </div>
+            <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+              {sectorData.length}
+            </span>
+          </div>
+          <div className="p-2">
+            {sectorData.length > 0 ? (
+              <div className="h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sectorData.slice(0, 6)} layout="vertical" margin={{ left: 0, right: 10 }}>
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={75}
+                      tick={{ fontSize: 9, fill: '#78716c' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-stone-900 text-white px-2 py-1 rounded text-[10px]">
+                              {payload[0].payload.name}: {payload[0].value}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#10b981" radius={[0, 3, 3, 0]} barSize={12} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="p-4 text-center">
+                <Building size={18} className="mx-auto text-stone-300 mb-1" />
+                <p className="text-stone-400 text-[10px]">No sectors</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CVEs + Malware Stack */}
+        <div className="col-span-3 space-y-4">
+          {/* Critical CVEs */}
+          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+            <div className="px-3 py-2 border-b border-stone-100 flex items-center gap-2">
+              <div className="p-1 rounded-lg bg-red-100">
+                <Shield size={12} className="text-red-600" />
+              </div>
+              <h2 className="text-xs font-semibold text-stone-900">Critical CVEs</h2>
+            </div>
+            <div className="p-2 space-y-1">
               {stats?.top_cves && stats.top_cves.length > 0 ? (
-                stats.top_cves.slice(0, 5).map(([cve, count]) => (
-                  <div key={cve} className="flex items-center justify-between group p-2 rounded-lg hover:bg-red-50 transition-colors">
-                    <code className="text-xs text-red-600 font-medium">{cve}</code>
-                    <span className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded">{count}</span>
+                stats.top_cves.slice(0, 4).map(([cve, count]) => (
+                  <div key={cve} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                    <code className="text-[10px] text-red-600 font-medium">{cve}</code>
+                    <span className="text-[9px] text-stone-400 bg-stone-100 px-1 py-0.5 rounded">{count}</span>
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center">
-                  <Shield size={20} className="mx-auto text-stone-300 mb-1" />
-                  <p className="text-stone-400 text-xs">No CVEs found</p>
+                <div className="p-2 text-center">
+                  <p className="text-stone-400 text-[10px]">No CVEs</p>
                 </div>
               )}
             </div>
@@ -492,18 +618,20 @@ export default function TodayView({
           {/* Malware */}
           {stats?.all_malware && stats.all_malware.length > 0 && (
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-              <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-orange-100">
-                  <Zap size={14} className="text-orange-600" />
+              <div className="px-3 py-2 border-b border-stone-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded-lg bg-orange-100">
+                    <Zap size={12} className="text-orange-600" />
+                  </div>
+                  <h2 className="text-xs font-semibold text-stone-900">Malware</h2>
                 </div>
-                <h2 className="text-sm font-semibold text-stone-900">Malware</h2>
+                <span className="text-[9px] font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full">
+                  {stats.all_malware.length}
+                </span>
               </div>
-              <div className="p-3 flex flex-wrap gap-1.5">
-                {stats.all_malware.slice(0, 8).map((malware) => (
-                  <span
-                    key={malware}
-                    className="text-[10px] px-2 py-1 bg-orange-50 text-orange-600 rounded-lg border border-orange-200"
-                  >
+              <div className="p-2 flex flex-wrap gap-1">
+                {stats.all_malware.slice(0, 6).map((malware) => (
+                  <span key={malware} className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded border border-orange-200">
                     {malware}
                   </span>
                 ))}
@@ -511,88 +639,168 @@ export default function TodayView({
             </div>
           )}
         </div>
-
-        {/* IoC Breakdown */}
-        <div className="col-span-3 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-100">
-              <Target size={14} className="text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-stone-900">Indicators</h2>
-              <p className="text-[10px] text-stone-400">IoC breakdown</p>
-            </div>
-          </div>
-          <div className="p-4">
-            {iocData.length > 0 ? (
-              <>
-                <div className="h-32 mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={iocData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
-                        paddingAngle={4}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {iocData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2">
-                  {iocData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs text-stone-600">{item.name}</span>
-                      </div>
-                      <span className="text-xs font-medium text-stone-900 tabular-nums">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="p-4 text-center">
-                <Target size={24} className="mx-auto text-stone-300 mb-2" />
-                <p className="text-stone-400 text-xs">No IoCs found</p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Attack Techniques */}
+      {/* Attack Techniques - Radar Chart + Tags */}
       {stats && Object.keys(stats.tag_counts).length > 0 && (
         <div className="mt-4 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-cyan-100">
-              <Zap size={14} className="text-cyan-600" />
+          <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-cyan-100">
+                <Zap size={14} className="text-cyan-600" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-stone-900">Attack Techniques</h2>
+                <p className="text-[10px] text-stone-400">Observed TTPs</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-stone-900">Attack Techniques</h2>
-              <p className="text-[10px] text-stone-400">Observed TTPs</p>
+            <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2 py-1 rounded-full">
+              {Object.keys(stats.tag_counts).length} techniques
+            </span>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-12 gap-4">
+              {/* Radar Chart */}
+              <div className="col-span-4">
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart
+                      data={Object.entries(stats.tag_counts)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 6)
+                        .map(([tag, count]) => ({
+                          technique: tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                          count,
+                          fullMark: Math.max(...Object.values(stats.tag_counts))
+                        }))}
+                    >
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis
+                        dataKey="technique"
+                        tick={{ fontSize: 9, fill: '#64748b' }}
+                      />
+                      <Radar
+                        name="Techniques"
+                        dataKey="count"
+                        stroke="#0891b2"
+                        fill="#0891b2"
+                        fillOpacity={0.3}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {/* Technique Tags */}
+              <div className="col-span-8 flex flex-wrap gap-2 content-start">
+                {Object.entries(stats.tag_counts)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 15)
+                  .map(([tag, count], index) => {
+                    const opacity = 1 - (index * 0.05);
+                    return (
+                      <span
+                        key={tag}
+                        className="text-xs px-3 py-1.5 bg-gradient-to-r from-slate-50 to-cyan-50 text-slate-700 rounded-full border border-slate-200 capitalize hover:shadow-md hover:border-cyan-300 transition-all cursor-default"
+                        style={{ opacity: Math.max(opacity, 0.5) }}
+                      >
+                        {tag.replace(/_/g, ' ')}
+                        <span className="ml-1.5 text-cyan-600 font-medium">{count}</span>
+                      </span>
+                    );
+                  })}
+              </div>
             </div>
           </div>
-          <div className="p-4 flex flex-wrap gap-2">
-            {Object.entries(stats.tag_counts)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 12)
-              .map(([tag, count]) => (
-                <span
-                  key={tag}
-                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-slate-50 to-cyan-50 text-slate-700 rounded-full border border-slate-200 capitalize hover:shadow-md transition-all cursor-default"
-                >
-                  {tag.replace(/_/g, ' ')}
-                  <span className="ml-1.5 text-slate-400">{count}</span>
-                </span>
-              ))}
+        </div>
+      )}
+
+      {/* AI Threat Intelligence Section */}
+      {stats && (stats.tag_counts.ai_attack || stats.tag_counts.ai_abuse || stats.tag_counts.ai_supply_chain || Object.keys(stats.tag_counts).some(k => k.includes('ai'))) && (
+        <div className="mt-4 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-stone-100 bg-gradient-to-r from-slate-50 to-cyan-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-cyan-100">
+                <Brain size={14} className="text-cyan-600" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-stone-900">AI Threat Intelligence</h2>
+                <p className="text-[10px] text-stone-400">AI-related security threats</p>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-cyan-600 bg-white px-2 py-1 rounded-full border border-cyan-200">
+              {(stats.tag_counts.ai_attack || 0) + (stats.tag_counts.ai_abuse || 0) + (stats.tag_counts.ai_supply_chain || 0)} signals
+            </span>
+          </div>
+          <div className="p-4">
+            {/* AI Threat Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap size={12} className="text-red-500" />
+                  <span className="text-[10px] text-red-600 font-medium uppercase tracking-wider">AI Attacks</span>
+                </div>
+                <p className="text-2xl font-semibold text-red-700 tabular-nums">{stats.tag_counts.ai_attack || 0}</p>
+                <p className="text-[10px] text-red-400">AI-powered attack vectors</p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle size={12} className="text-amber-500" />
+                  <span className="text-[10px] text-amber-600 font-medium uppercase tracking-wider">AI Abuse</span>
+                </div>
+                <p className="text-2xl font-semibold text-amber-700 tabular-nums">{stats.tag_counts.ai_abuse || 0}</p>
+                <p className="text-[10px] text-amber-400">AI system misuse</p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Cpu size={12} className="text-cyan-500" />
+                  <span className="text-[10px] text-cyan-600 font-medium uppercase tracking-wider">AI Supply Chain</span>
+                </div>
+                <p className="text-2xl font-semibold text-cyan-700 tabular-nums">{stats.tag_counts.ai_supply_chain || 0}</p>
+                <p className="text-[10px] text-cyan-400">ML pipeline risks</p>
+              </div>
+            </div>
+            {/* Recent AI-related items */}
+            {items.filter(item =>
+              item.extracted.tags.some(t => t.toLowerCase().includes('ai')) ||
+              item.title.toLowerCase().includes('ai ') ||
+              item.title.toLowerCase().includes('artificial intelligence') ||
+              item.title.toLowerCase().includes('machine learning') ||
+              item.title.toLowerCase().includes('llm') ||
+              item.title.toLowerCase().includes('gpt')
+            ).length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-stone-500 mb-2">Recent AI-Related Threats</h3>
+                <div className="space-y-2">
+                  {items.filter(item =>
+                    item.extracted.tags.some(t => t.toLowerCase().includes('ai')) ||
+                    item.title.toLowerCase().includes('ai ') ||
+                    item.title.toLowerCase().includes('artificial intelligence') ||
+                    item.title.toLowerCase().includes('machine learning') ||
+                    item.title.toLowerCase().includes('llm') ||
+                    item.title.toLowerCase().includes('gpt')
+                  ).slice(0, 3).map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => onItemClick(item)}
+                      className="w-full p-3 rounded-xl bg-stone-50 hover:bg-cyan-50 border border-stone-200 hover:border-cyan-300 text-left transition-all group"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-1 h-8 rounded-full bg-cyan-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-stone-700 group-hover:text-stone-900 line-clamp-1">{item.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-stone-400">{item.source}</span>
+                            <span className="text-[10px] text-stone-300">&bull;</span>
+                            <span className="text-[10px] text-stone-400">{formatDistanceToNow(new Date(item.date), { addSuffix: true })}</span>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-stone-300 group-hover:text-cyan-500 transition-colors mt-1 flex-shrink-0" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
