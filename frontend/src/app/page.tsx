@@ -6,28 +6,22 @@ import TodayView from '@/components/TodayView';
 import BriefingsView from '@/components/BriefingsView';
 import TrendsView from '@/components/TrendsView';
 import ThreadsView from '@/components/ThreadsView';
-import PlaybooksView from '@/components/PlaybooksView';
-import LearningView from '@/components/LearningView';
+import FeedsView from '@/components/FeedsView';
 import SettingsView from '@/components/SettingsView';
 import ThreadDetailPanel from '@/components/ThreadDetailPanel';
 import {
   Stats, ThreatItem, CVEEntry, IoCs, ThreatEntry, SearchResult, ViewType
 } from '@/types';
 import * as api from '@/lib/api';
-import { AlertCircle, Search, X } from 'lucide-react';
+import { AlertTriangle, Search, X } from 'lucide-react';
 
 export default function Dashboard() {
-  // View state
   const [currentView, setCurrentView] = useState<ViewType>('today');
-
-  // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [items, setItems] = useState<ThreatItem[]>([]);
   const [cves, setCves] = useState<CVEEntry[]>([]);
   const [iocs, setIocs] = useState<IoCs | null>(null);
   const [threats, setThreats] = useState<ThreatEntry[]>([]);
-
-  // UI state
   const [selectedItem, setSelectedItem] = useState<ThreatItem | null>(null);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,8 +30,8 @@ export default function Dashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
 
-  // Fetch all data
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -64,12 +58,26 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Initial data fetch
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Sync news handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+        setSelectedItem(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleSync = async () => {
     try {
       setIsSyncing(true);
@@ -84,7 +92,6 @@ export default function Dashboard() {
     }
   };
 
-  // Upload PDFs handler
   const handleUpload = async (files: File[]) => {
     try {
       setIsUploading(true);
@@ -99,7 +106,6 @@ export default function Dashboard() {
     }
   };
 
-  // Clear data handler
   const handleClear = async () => {
     try {
       await api.clearData();
@@ -111,7 +117,6 @@ export default function Dashboard() {
     }
   };
 
-  // Search handler
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -123,6 +128,7 @@ export default function Dashboard() {
       setSearchResult(result);
       setItems(result.results);
       setCurrentView('threads');
+      setShowSearch(false);
     } catch (err) {
       console.error('Search failed:', err);
       setError('Search failed. Please try again.');
@@ -131,7 +137,6 @@ export default function Dashboard() {
     }
   };
 
-  // Clear search handler
   const handleClearSearch = async () => {
     setSearchResult(null);
     setSearchQuery('');
@@ -139,7 +144,6 @@ export default function Dashboard() {
     setItems(itemsRes.items);
   };
 
-  // Item click handler
   const handleItemClick = async (item: ThreatItem) => {
     try {
       const fullItem = await api.getItem(item.id);
@@ -149,13 +153,10 @@ export default function Dashboard() {
     }
   };
 
-  // Add to learning queue
   const handleAddToLearning = (item: ThreatItem) => {
-    // In a real app, this would be persisted
     console.log('Adding to learning queue:', item.id);
   };
 
-  // Render main content based on current view
   const renderMainContent = () => {
     switch (currentView) {
       case 'today':
@@ -194,29 +195,10 @@ export default function Dashboard() {
             onItemClick={handleItemClick}
           />
         );
-      case 'playbooks':
-        return (
-          <PlaybooksView
-            items={searchResult ? searchResult.results : items}
-            stats={stats}
-            isLoading={isLoading}
-            onItemClick={handleItemClick}
-          />
-        );
-      case 'learning':
-        return (
-          <LearningView
-            items={searchResult ? searchResult.results : items}
-            isLoading={isLoading}
-            onItemClick={handleItemClick}
-          />
-        );
+      case 'feeds':
+        return <FeedsView />;
       case 'settings':
-        return (
-          <SettingsView
-            onClearData={handleClear}
-          />
-        );
+        return <SettingsView onClearData={handleClear} />;
       default:
         return (
           <TodayView
@@ -231,8 +213,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-paper-50 relative overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-slate-50">
       <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
@@ -243,76 +224,55 @@ export default function Dashboard() {
         isUploading={isUploading}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Top Search Bar */}
-        <div className="bg-white border-b border-ink-100 px-8 py-4">
-          <form onSubmit={handleSearch} className="max-w-2xl">
-            <div className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" />
-              <input
-                type="text"
-                placeholder="Search threats by CVE, actor, technique, or keyword..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input pl-11 pr-24"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute right-20 top-1/2 -translate-y-1/2 p-1.5 text-ink-400 hover:text-ink-600"
-                >
-                  <X size={16} />
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={isSearching || !searchQuery.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-ink-900 text-white text-sm font-medium rounded-lg hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </button>
-            </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 text-sm rounded-lg hover:bg-slate-200 transition-colors max-w-md w-full"
+            >
+              <Search size={16} />
+              <span>Search threats, CVEs, actors...</span>
+              <span className="ml-auto text-xs text-slate-400 bg-white px-1.5 py-0.5 rounded">⌘K</span>
+            </button>
 
-            {/* Search result indicator */}
             {searchResult && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-ink-600">
-                <span>Found <strong>{searchResult.result_count}</strong> results for "{searchResult.query}"</span>
+              <div className="flex items-center gap-3 ml-4">
+                <span className="text-sm text-slate-500">
+                  Found <span className="font-medium text-slate-700">{searchResult.result_count}</span> results
+                </span>
                 <button
                   onClick={handleClearSearch}
-                  className="text-accent-coral hover:underline"
+                  className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
                 >
-                  Clear search
+                  <X size={14} />
+                  Clear
                 </button>
               </div>
             )}
-          </form>
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Panel */}
-          <main className="flex-1 overflow-y-auto p-8">
-            {/* Error Banner */}
+          <main className="flex-1 overflow-hidden">
             {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 animate-fadeInUp">
-                <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
+              <div className="mx-6 mt-4 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3">
+                <AlertTriangle size={18} className="text-red-500" />
                 <p className="text-red-700 text-sm">{error}</p>
                 <button
                   onClick={() => setError(null)}
                   className="ml-auto p-1 text-red-400 hover:text-red-600"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </div>
             )}
 
-            {/* Main Content */}
             {renderMainContent()}
           </main>
 
-          {/* Detail Panel */}
           {selectedItem && (
             <ThreadDetailPanel
               item={selectedItem}
@@ -322,6 +282,55 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Search Modal */}
+      {showSearch && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowSearch(false)}
+          />
+          <div className="relative w-full max-w-xl mx-4">
+            <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search CVEs, threat actors, techniques..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-20 py-4 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none text-base border-b border-slate-200"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {isSearching ? 'Searching...' : 'Search'}
+                  </button>
+                </div>
+              </form>
+
+              <div className="p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Quick searches</p>
+                <div className="flex flex-wrap gap-2">
+                  {['CVE-2024', 'ransomware', 'APT', 'phishing', 'credential theft'].map((term) => (
+                    <button
+                      key={term}
+                      onClick={() => setSearchQuery(term)}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-600 text-sm rounded hover:bg-slate-200 transition-colors"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

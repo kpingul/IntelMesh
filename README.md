@@ -1,59 +1,55 @@
-# Cyber Threat Radar
+# IntelMesh
 
-A personal threat intelligence briefing platform designed for security professionals. Get daily briefings, track trends, study attack patterns, and build your defensive knowledge—all in a clean, learning-first interface.
+A personal threat intelligence platform for security professionals. Aggregate threat feeds, track vulnerabilities, monitor threat actors, and analyze attack patterns—all in a clean, minimal interface.
+
+![IntelMesh Dashboard](screenshots/dashboard.png)
 
 ## Features
 
-### Daily Briefings
-- **Today's Briefing**: 5-10 bullet summary of what matters today
-- **Briefing Modes**: Executive (impact-focused), Analyst (investigation angles), Engineer (mitigation steps)
-- **Daily/Weekly/Monthly Views**: Curated summaries that emphasize patterns and learning
+### Dashboard
+- **Key Risk Indicators**: Exploited CVEs, active threat actors, attack surface, sectors at risk, geographic spread
+- **Priority Intelligence**: High-severity items requiring immediate attention
+- **Attack Techniques**: Trending TTPs across your intel sources
 
-### Trends & Patterns
-- **Category Trends**: Track ransomware, phishing, exploitation, and other threat categories
-- **Technique Frequency**: See which TTPs are appearing most often
-- **Insight Cards**: AI-generated observations like "OAuth abuse is rising"
+### Intelligence Briefings
+- **Daily/Weekly/Monthly Views**: Curated summaries with time-based filtering
+- **Briefing Modes**: Executive (impact-focused), Analyst (investigation angles), Engineer (detection focus)
+- **Trend Analysis**: Identify patterns and shifts in the threat landscape
 
-### Threat Threads
-- **Deduplicated Stories**: Multiple articles clustered into single threat topics
-- **Rich Entity Extraction**: CVEs, IoCs, threat actors, malware families, TTPs
-- **Attack Flow Indicators**: See which threads have step-by-step attack breakdowns
+### Threat Feeds
+- **OSINT Feeds**: ThreatFox, URLhaus, MalwareBazaar, Feodo Tracker, CISA KEV
+- **IoC Types**: IPs, domains, URLs, file hashes
+- **CVE Tracking**: Known exploited vulnerabilities with ransomware indicators
 
-### Attack Playbooks
-- **Visual Attack Flows**: Step-by-step breakdown of how attacks work
-- **Defender Guidance**: What to look for, mitigations, and detection ideas
-- **Difficulty Levels**: Beginner, intermediate, and advanced playbooks
+### Articles & Analysis
+- **12 News Sources**: BleepingComputer, The Hacker News, Krebs on Security, CISA, and more
+- **Entity Extraction**: CVEs, IoCs, threat actors, malware families, TTPs
+- **Rich Filtering**: By category, severity, and attack type
 
-### Learning Queue
-- **Personal Study List**: Track what you're learning
-- **Progress Tracking**: Not started, in progress, learned
-- **Notes & Takeaways**: Capture your insights
-
-### 12 News Sources
-- BleepingComputer, GBHackers, The Hacker News, Krebs on Security
-- Security Affairs, Threatpost, SecurityWeek, CISA
-- Cisco Talos, Palo Alto Unit42, Mandiant, Recorded Future
+### Trend Analysis
+- **Technique Radar**: Visual representation of attack technique frequency
+- **IoC Distribution**: Breakdown by indicator type
+- **Threat Actor Tracking**: Monitor active campaigns
 
 ## Quick Start
 
 ### Prerequisites
-
-- Python 3.9+ (3.11 recommended)
+- Python 3.9+
 - Node.js 18+
-- npm
 
 ### Installation
 
-1. **Clone and navigate to the project:**
+1. **Clone the repository:**
    ```bash
-   cd threat-intel-dashboard
+   git clone https://github.com/kpingul/IntelMesh.git
+   cd IntelMesh
    ```
 
 2. **Set up the backend:**
    ```bash
    cd backend
-   python3.11 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python3 -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
@@ -63,65 +59,52 @@ A personal threat intelligence briefing platform designed for security professio
    npm install
    ```
 
-### Running the Application
+### Running
 
-**Terminal 1 - Start the backend:**
+**Terminal 1 - Backend:**
 ```bash
 cd backend
 source venv/bin/activate
 python -m uvicorn main:app --reload --port 8000
 ```
 
-**Terminal 2 - Start the frontend:**
+**Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm run dev
 ```
 
-**Open your browser to:** http://localhost:3000
-
-## Usage
-
-1. **Sync News**: Click "Sync News" in the sidebar to fetch the latest articles
-2. **Daily Briefing**: Start on the Today view for a quick situational awareness check
-3. **Explore Trends**: Use the Trends view to identify patterns and shifts
-4. **Study Threads**: Browse deduplicated threat stories in the Threads view
-5. **Learn Playbooks**: Study attack flows with defender guidance
-6. **Track Learning**: Add items to your learning queue and capture notes
+Open http://localhost:3000
 
 ## Architecture
 
 ```
-threat-intel-dashboard/
+IntelMesh/
 ├── backend/
-│   ├── main.py           # FastAPI application (11 endpoints)
-│   ├── scraper.py        # RSS/HTML scraping for 12 news sources
-│   ├── extractors.py     # Entity extraction (CVEs, IoCs, threats, TTPs)
-│   ├── pdf_extractor.py  # PDF text extraction
-│   ├── query_parser.py   # Natural language query parsing
-│   ├── store.py          # In-memory data store
-│   └── requirements.txt
+│   ├── main.py           # FastAPI application
+│   ├── scraper.py        # RSS/HTML scraping
+│   ├── extractors.py     # Entity extraction (CVEs, IoCs, TTPs)
+│   ├── threat_feeds.py   # OSINT feed integration
+│   ├── pdf_extractor.py  # PDF processing
+│   ├── query_parser.py   # Search query parsing
+│   └── store.py          # In-memory data store
 │
 └── frontend/
-    ├── src/
-    │   ├── app/
-    │   │   ├── page.tsx      # Main dashboard
-    │   │   ├── layout.tsx    # Root layout
-    │   │   └── globals.css   # Global styles
-    │   ├── components/
-    │   │   ├── Sidebar.tsx
-    │   │   ├── TodayView.tsx
-    │   │   ├── BriefingsView.tsx
-    │   │   ├── TrendsView.tsx
-    │   │   ├── ThreadsView.tsx
-    │   │   ├── PlaybooksView.tsx
-    │   │   ├── LearningView.tsx
-    │   │   ├── SettingsView.tsx
-    │   │   └── ThreadDetailPanel.tsx
-    │   ├── lib/api.ts
-    │   └── types/index.ts
-    ├── package.json
-    └── tailwind.config.js
+    └── src/
+        ├── app/
+        │   ├── page.tsx      # Main dashboard
+        │   └── globals.css   # Global styles
+        ├── components/
+        │   ├── Sidebar.tsx
+        │   ├── TodayView.tsx
+        │   ├── BriefingsView.tsx
+        │   ├── TrendsView.tsx
+        │   ├── ThreadsView.tsx
+        │   ├── FeedsView.tsx
+        │   ├── SettingsView.tsx
+        │   └── ThreadDetailPanel.tsx
+        ├── lib/api.ts
+        └── types/index.ts
 ```
 
 ## API Endpoints
@@ -129,29 +112,24 @@ threat-intel-dashboard/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/stats` | GET | Dashboard statistics |
-| `/api/items` | GET | All items (with optional source filter) |
-| `/api/items/{id}` | GET | Specific item with evidence snippets |
-| `/api/cves` | GET | All CVEs with counts and sources |
-| `/api/iocs` | GET | All IoCs grouped by type |
-| `/api/threats` | GET | All threats (malware + actors) |
-| `/api/sync` | POST | Sync news from configured sources |
-| `/api/upload` | POST | Upload and process PDF files |
-| `/api/search` | POST | Natural language search |
-| `/api/clear` | DELETE | Clear all stored data |
-
-## Design Philosophy
-
-- **Signal over noise**: Deduplicate stories into threads
-- **Learning-first**: Every item teaches "how it works" + "what to do"
-- **Fast scanning**: Briefings readable in minutes
-- **Visual understanding**: Attack flow diagrams make threats memorable
+| `/api/items` | GET | All intel items |
+| `/api/items/{id}` | GET | Specific item details |
+| `/api/cves` | GET | CVEs with counts |
+| `/api/iocs` | GET | IoCs by type |
+| `/api/threats` | GET | Threats (malware + actors) |
+| `/api/sync` | POST | Sync news sources |
+| `/api/upload` | POST | Upload PDFs |
+| `/api/search` | POST | Search intel |
+| `/api/feeds/sync` | POST | Sync threat feeds |
+| `/api/feeds/iocs` | GET | Feed IoCs |
+| `/api/feeds/cves` | GET | Feed CVEs |
 
 ## Tech Stack
 
-- **Backend**: FastAPI, httpx, BeautifulSoup4, feedparser, pdfplumber
-- **Frontend**: Next.js 14, React 18, Tailwind CSS, Recharts, Lucide Icons
-- **Typography**: Fraunces (display), Source Sans 3 (body), JetBrains Mono (code)
-- **No Database**: In-memory storage only (session-based)
+- **Backend**: FastAPI, aiohttp, BeautifulSoup4, feedparser, pdfplumber
+- **Frontend**: Next.js 14, React 18, Tailwind CSS, Recharts
+- **Typography**: Fragment Mono
+- **Storage**: In-memory (session-based)
 
 ## License
 

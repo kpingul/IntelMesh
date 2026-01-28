@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import {
-  X, ExternalLink, Clock, Shield, Target, Skull, Tag,
-  Copy, CheckCircle, FileText, Globe, Hash, Link2, AlertTriangle,
-  ChevronDown, ChevronRight, BookOpen, Plus, Eye, Bookmark
+  X, ExternalLink, Clock, Shield, Target,
+  Copy, CheckCircle, Globe, Hash, Link2, AlertTriangle,
+  ChevronDown, ChevronRight, FileText, Eye, Bookmark,
+  Share2, Zap
 } from 'lucide-react';
-import { ThreatItem, Evidence } from '@/types';
+import { ThreatItem } from '@/types';
 import { formatDistanceToNow, format } from 'date-fns';
 
 interface ThreadDetailPanelProps {
@@ -15,9 +16,9 @@ interface ThreadDetailPanelProps {
   onAddToLearning?: (item: ThreatItem) => void;
 }
 
-export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: ThreadDetailPanelProps) {
+export default function ThreadDetailPanel({ item, onClose }: ThreadDetailPanelProps) {
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary', 'cves', 'threats']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary', 'cves', 'threats', 'iocs']));
 
   if (!item) return null;
 
@@ -37,14 +38,24 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
     setExpandedSections(newExpanded);
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return format(date, 'PPpp');
-    } catch {
-      return dateStr;
-    }
+  const getSeverityScore = () => {
+    let score = 0;
+    score += item.extracted.cves.length * 3;
+    score += item.extracted.actors.length * 2;
+    score += item.extracted.malware.length * 2;
+    if (item.extracted.tags.includes('ransomware')) score += 3;
+    return score;
   };
+
+  const getSeverityLevel = () => {
+    const score = getSeverityScore();
+    if (score >= 6) return { level: 'CRITICAL', color: 'text-red-700', bg: 'bg-red-100' };
+    if (score >= 4) return { level: 'HIGH', color: 'text-orange-700', bg: 'bg-orange-100' };
+    if (score >= 2) return { level: 'MEDIUM', color: 'text-amber-700', bg: 'bg-amber-100' };
+    return { level: 'LOW', color: 'text-green-700', bg: 'bg-green-100' };
+  };
+
+  const severity = getSeverityLevel();
 
   const CopyButton = ({ value }: { value: string }) => (
     <button
@@ -52,11 +63,11 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
         e.stopPropagation();
         copyToClipboard(value);
       }}
-      className="p-1.5 text-ink-400 hover:text-accent-coral hover:bg-accent-coral/10 rounded-lg transition-all duration-200"
+      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
       title="Copy to clipboard"
     >
       {copiedValue === value ? (
-        <CheckCircle size={14} className="text-emerald-500" />
+        <CheckCircle size={14} className="text-green-500" />
       ) : (
         <Copy size={14} />
       )}
@@ -70,7 +81,6 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
     iconColor,
     count,
     children,
-    defaultExpanded = true
   }: {
     id: string;
     title: string;
@@ -78,33 +88,34 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
     iconColor: string;
     count?: number;
     children: React.ReactNode;
-    defaultExpanded?: boolean;
   }) => {
     const isExpanded = expandedSections.has(id);
 
     return (
-      <div className="border-b border-ink-100 last:border-0">
+      <div className="border-b border-slate-200 last:border-0">
         <button
           onClick={() => toggleSection(id)}
-          className="w-full flex items-center justify-between py-4 hover:bg-paper-50 transition-colors px-1"
+          className="w-full flex items-center justify-between py-3 hover:bg-slate-50 transition-colors px-1"
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${iconColor}`}>
+            <div className={`p-1.5 rounded-lg ${iconColor}`}>
               {icon}
             </div>
-            <h3 className="font-semibold text-ink-900 text-sm">
-              {title}
-            </h3>
+            <span className="font-medium text-slate-700 text-sm">{title}</span>
             {count !== undefined && (
-              <span className="text-xs font-mono text-ink-500 bg-paper-200 px-2 py-0.5 rounded-lg">
+              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                 {count}
               </span>
             )}
           </div>
-          {isExpanded ? <ChevronDown size={18} className="text-ink-400" /> : <ChevronRight size={18} className="text-ink-400" />}
+          {isExpanded ? (
+            <ChevronDown size={16} className="text-slate-400" />
+          ) : (
+            <ChevronRight size={16} className="text-slate-400" />
+          )}
         </button>
         {isExpanded && (
-          <div className="pb-4 animate-slideDown">
+          <div className="pb-4 animate-slide-up">
             {children}
           </div>
         )}
@@ -112,45 +123,35 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
     );
   };
 
-  const getSourceColor = (source: string) => {
-    const colors: Record<string, string> = {
-      bleepingcomputer: 'bg-blue-100 text-blue-700',
-      gbhackers: 'bg-emerald-100 text-emerald-700',
-      thehackernews: 'bg-orange-100 text-orange-700',
-      krebsonsecurity: 'bg-purple-100 text-purple-700',
-      securityaffairs: 'bg-rose-100 text-rose-700',
-      cisa: 'bg-red-100 text-red-700',
-      pdf: 'bg-ink-100 text-ink-700',
-    };
-    return colors[source] || 'bg-ink-100 text-ink-600';
-  };
-
   return (
-    <div className="w-[520px] bg-white border-l border-ink-100 h-full overflow-y-auto animate-slideIn relative flex flex-col">
+    <div className="w-[520px] bg-white border-l border-slate-200 h-full flex flex-col animate-slide-up">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-ink-100 p-5 z-10">
+      <div className="flex-shrink-0 border-b border-slate-200 p-5 bg-slate-50">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            {/* Source & Date */}
-            <div className="flex items-center gap-3 mb-3">
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-lg capitalize ${getSourceColor(item.source)}`}>
+            {/* Meta row */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-medium px-2 py-1 rounded bg-slate-200 text-slate-600 capitalize">
                 {item.source}
               </span>
-              <span className="text-xs text-ink-400 flex items-center gap-1">
-                <Clock size={12} />
+              <span className={`text-[10px] font-medium px-2 py-1 rounded ${severity.bg} ${severity.color}`}>
+                {severity.level}
+              </span>
+              <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                <Clock size={10} />
                 {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
               </span>
             </div>
 
-            <h2 className="font-display font-semibold text-ink-900 text-xl leading-tight">
+            <h2 className="font-semibold text-slate-900 text-lg leading-snug">
               {item.title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-ink-400 hover:text-ink-600 hover:bg-paper-100 rounded-xl transition-all duration-200"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
@@ -161,39 +162,32 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-secondary text-sm"
+              className="px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg hover:bg-slate-800 flex items-center gap-1.5"
             >
               <ExternalLink size={14} />
               View Source
             </a>
           )}
-          {onAddToLearning && (
-            <button
-              onClick={() => onAddToLearning(item)}
-              className="btn btn-ghost text-sm"
-            >
-              <Plus size={14} />
-              Add to Learning
-            </button>
-          )}
-          <button className="btn btn-ghost text-sm">
+          <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
             <Bookmark size={14} />
-            Save
+          </button>
+          <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+            <Share2 size={14} />
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-5">
+      <div className="flex-1 overflow-y-auto p-5">
         {/* Summary */}
         {item.description && (
           <Section
             id="summary"
             title="Summary"
-            icon={<FileText size={16} />}
-            iconColor="bg-paper-200 text-ink-600"
+            icon={<FileText size={14} />}
+            iconColor="bg-slate-100"
           >
-            <p className="text-ink-700 leading-relaxed text-sm bg-paper-50 rounded-xl p-4 border border-ink-100">
+            <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-4 border border-slate-200">
               {item.description}
             </p>
           </Section>
@@ -204,24 +198,24 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
           <Section
             id="cves"
             title="CVEs"
-            icon={<Shield size={16} />}
-            iconColor="bg-red-50 text-red-600"
+            icon={<Shield size={14} className="text-red-500" />}
+            iconColor="bg-red-50"
             count={item.extracted.cves.length}
           >
             <div className="space-y-2">
               {item.extracted.cves.map((cve, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between bg-paper-50 hover:bg-paper-100 rounded-xl px-4 py-3 border border-ink-100 transition-colors duration-200 group"
+                  className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-200 hover:border-red-300 transition-colors group"
                 >
-                  <code className="text-red-600 font-mono text-sm font-medium">{cve}</code>
+                  <code className="text-sm text-red-600">{cve}</code>
                   <div className="flex items-center gap-1">
                     <CopyButton value={cve} />
                     <a
                       href={`https://nvd.nist.gov/vuln/detail/${cve}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 text-ink-400 hover:text-accent-ocean hover:bg-accent-ocean/10 rounded-lg transition-all duration-200"
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                     >
                       <ExternalLink size={14} />
                     </a>
@@ -238,31 +232,31 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
           <Section
             id="iocs"
             title="Indicators of Compromise"
-            icon={<Target size={16} />}
-            iconColor="bg-amber-50 text-amber-600"
+            icon={<Target size={14} className="text-amber-500" />}
+            iconColor="bg-amber-50"
           >
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* IPs */}
               {item.extracted.ips.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Globe size={14} className="text-ink-400" />
-                    <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe size={12} className="text-slate-400" />
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                       IP Addresses ({item.extracted.ips.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {item.extracted.ips.slice(0, 8).map((ip, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between bg-paper-50 rounded-lg px-3 py-2 border border-ink-100"
+                        className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-200 group"
                       >
-                        <code className="text-amber-600 font-mono text-sm">{ip}</code>
+                        <code className="text-xs text-amber-600">{ip}</code>
                         <CopyButton value={ip} />
                       </div>
                     ))}
                     {item.extracted.ips.length > 8 && (
-                      <p className="text-xs text-ink-400 mt-2 pl-1">
+                      <p className="text-[10px] text-slate-400 mt-1">
                         +{item.extracted.ips.length - 8} more
                       </p>
                     )}
@@ -273,24 +267,24 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
               {/* Domains */}
               {item.extracted.domains.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Link2 size={14} className="text-ink-400" />
-                    <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Link2 size={12} className="text-slate-400" />
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                       Domains ({item.extracted.domains.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {item.extracted.domains.slice(0, 8).map((domain, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between bg-paper-50 rounded-lg px-3 py-2 border border-ink-100"
+                        className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-200 group"
                       >
-                        <code className="text-accent-ocean font-mono text-sm truncate">{domain}</code>
+                        <code className="text-xs text-blue-600 truncate max-w-[300px]">{domain}</code>
                         <CopyButton value={domain} />
                       </div>
                     ))}
                     {item.extracted.domains.length > 8 && (
-                      <p className="text-xs text-ink-400 mt-2 pl-1">
+                      <p className="text-[10px] text-slate-400 mt-1">
                         +{item.extracted.domains.length - 8} more
                       </p>
                     )}
@@ -301,21 +295,21 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
               {/* Hashes */}
               {item.extracted.hashes.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Hash size={14} className="text-ink-400" />
-                    <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Hash size={12} className="text-slate-400" />
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                       File Hashes ({item.extracted.hashes.length})
                     </span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {item.extracted.hashes.slice(0, 5).map((hash, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between bg-paper-50 rounded-lg px-3 py-2 border border-ink-100"
+                        className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-200 group"
                       >
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs text-ink-400 uppercase font-mono">{hash.type}</span>
-                          <code className="block text-emerald-600 font-mono text-xs truncate mt-0.5">
+                          <span className="text-[9px] text-slate-400 uppercase">{hash.type}</span>
+                          <code className="block text-[10px] text-cyan-600 truncate mt-0.5">
                             {hash.value}
                           </code>
                         </div>
@@ -323,7 +317,7 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
                       </div>
                     ))}
                     {item.extracted.hashes.length > 5 && (
-                      <p className="text-xs text-ink-400 mt-2 pl-1">
+                      <p className="text-[10px] text-slate-400 mt-1">
                         +{item.extracted.hashes.length - 5} more
                       </p>
                     )}
@@ -338,16 +332,16 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
         {item.extracted.threats.length > 0 && (
           <Section
             id="threats"
-            title="Threats"
-            icon={<Skull size={16} />}
-            iconColor="bg-violet-50 text-violet-600"
+            title="Threat Intelligence"
+            icon={<AlertTriangle size={14} className="text-purple-500" />}
+            iconColor="bg-purple-50"
             count={item.extracted.threats.length}
           >
             <div className="flex flex-wrap gap-2">
               {item.extracted.malware.map((m, i) => (
                 <span
                   key={`m-${i}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 text-xs font-medium"
                 >
                   <AlertTriangle size={12} />
                   {m}
@@ -356,9 +350,8 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
               {item.extracted.actors.map((a, i) => (
                 <span
                   key={`a-${i}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 text-violet-700 border border-violet-200 text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-50 text-purple-600 border border-purple-200 text-xs font-medium"
                 >
-                  <Skull size={12} />
                   {a}
                 </span>
               ))}
@@ -371,12 +364,12 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
           <Section
             id="techniques"
             title="Techniques & Tactics"
-            icon={<Tag size={16} />}
-            iconColor="bg-teal-50 text-teal-600"
+            icon={<Zap size={14} className="text-blue-500" />}
+            iconColor="bg-blue-50"
           >
             <div className="flex flex-wrap gap-2">
               {item.extracted.tags.map((tag, i) => (
-                <span key={i} className="tag tag-ttp capitalize">
+                <span key={i} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded capitalize">
                   {tag.replace(/_/g, ' ')}
                 </span>
               ))}
@@ -389,22 +382,22 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
           <Section
             id="evidence"
             title="Evidence Snippets"
-            icon={<Eye size={16} />}
-            iconColor="bg-paper-200 text-ink-600"
+            icon={<Eye size={14} />}
+            iconColor="bg-slate-100"
           >
             <div className="space-y-3">
               {item.evidence.map((ev, i) => (
                 <div
                   key={i}
-                  className="bg-paper-50 rounded-xl p-4 border border-ink-100"
+                  className="bg-slate-50 rounded-lg p-3 border border-slate-200"
                 >
-                  <span className={`tag mb-3 ${
-                    ev.type === 'cve' ? 'tag-cve' :
-                    ev.type === 'ioc' ? 'tag-ioc' : 'tag-threat'
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded mb-2 inline-block ${
+                    ev.type === 'cve' ? 'bg-red-100 text-red-600' :
+                    ev.type === 'ioc' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
                   }`}>
                     {ev.entity}
                   </span>
-                  <p className="text-sm text-ink-600 italic leading-relaxed">
+                  <p className="text-xs text-slate-500 italic leading-relaxed">
                     "{ev.snippet}"
                   </p>
                 </div>
@@ -412,6 +405,14 @@ export default function ThreadDetailPanel({ item, onClose, onAddToLearning }: Th
             </div>
           </Section>
         )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex-shrink-0 p-4 border-t border-slate-200 bg-slate-50">
+        <div className="flex items-center justify-between text-[10px] text-slate-400">
+          <span>ID: {item.id.slice(0, 12)}...</span>
+          <span>Added: {format(new Date(item.added_at), 'yyyy-MM-dd HH:mm')}</span>
+        </div>
       </div>
     </div>
   );

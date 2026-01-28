@@ -3,7 +3,7 @@ In-memory data store for threat intelligence items.
 No persistence - data lives for the session only.
 """
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import uuid
@@ -15,6 +15,11 @@ class ThreatIntelStore:
     """In-memory store for threat intelligence data."""
     items: List[Dict] = field(default_factory=list)
     _id_index: Dict[str, Dict] = field(default_factory=dict)
+
+    # Feed data storage
+    feed_iocs: Dict[str, List[Dict]] = field(default_factory=dict)
+    feed_cves: Dict[str, List[Dict]] = field(default_factory=dict)
+    feed_last_updated: Dict[str, str] = field(default_factory=dict)
 
     def add_item(self, item: Dict) -> str:
         """Add an item to the store. Returns the item ID."""
@@ -78,6 +83,9 @@ class ThreatIntelStore:
         all_malware: Set[str] = set()
         all_actors: Set[str] = set()
         all_tags: List[str] = []
+        all_products: List[str] = []
+        all_geography: List[str] = []
+        all_sectors: List[str] = []
 
         cve_counter: Counter = Counter()
         threat_counter: Counter = Counter()
@@ -103,8 +111,14 @@ class ThreatIntelStore:
             all_malware.update(extracted.get('malware', []))
             all_actors.update(extracted.get('actors', []))
             all_tags.extend(extracted.get('tags', []))
+            all_products.extend(extracted.get('products', []))
+            all_geography.extend(extracted.get('geography', []))
+            all_sectors.extend(extracted.get('sectors', []))
 
         total_iocs = len(all_ips) + len(all_domains) + len(all_hashes) + len(all_urls)
+
+        # Count sources dynamically
+        source_counts = Counter(item.get('source', 'unknown') for item in self.items)
 
         return {
             "total_items": total_items,
@@ -126,11 +140,10 @@ class ThreatIntelStore:
             "all_malware": list(all_malware),
             "all_actors": list(all_actors),
             "tag_counts": dict(Counter(all_tags)),
-            "sources": {
-                "bleepingcomputer": len([i for i in self.items if i.get('source') == 'bleepingcomputer']),
-                "gbhackers": len([i for i in self.items if i.get('source') == 'gbhackers']),
-                "pdf": pdfs,
-            }
+            "product_counts": dict(Counter(all_products)),
+            "geography_counts": dict(Counter(all_geography)),
+            "sector_counts": dict(Counter(all_sectors)),
+            "sources": dict(source_counts),
         }
 
     def get_all_cves(self) -> List[Dict]:
@@ -225,6 +238,145 @@ class ThreatIntelStore:
                 })
 
         return sorted(threat_data.values(), key=lambda x: x['count'], reverse=True)
+
+    # ============================================
+    # FEED DATA METHODS
+    # ============================================
+
+    def update_feed_iocs(self, source: str, items: List[Dict]) -> int:
+        """Update IOCs from a feed source."""
+        self.feed_iocs[source] = items
+        self.feed_last_updated[source] = datetime.now(timezone.utc).isoformat()
+        return len(items)
+
+    def update_feed_cves(self, source: str, items: List[Dict]) -> int:
+        """Update CVEs from a feed source."""
+        self.feed_cves[source] = items
+        self.feed_last_updated[source] = datetime.now(timezone.utc).isoformat()
+        return len(items)
+
+    def get_feed_iocs(self, source: Optional[str] = None, ioc_type: Optional[str] = None,
+                      threat_type: Optional[str] = None, limit: int = 500) -> List[Dict]:
+        """Get IOCs from feeds with optional filtering."""
+        all_iocs = []
+
+        sources = [source] if source else list(self.feed_iocs.keys())
+
+        for src in sources:
+            for ioc in self.feed_iocs.get(src, []):
+                if ioc_type and ioc.get("ioc_type") != ioc_type:
+                    continue
+                if threat_type and ioc.get("threat_type") != threat_type:
+                    continue
+                all_iocs.append(ioc)
+
+        return all_iocs[:limit]
+
+    def get_feed_cves(self, source: Optional[str] = None,
+                      ransomware_only: bool = False, limit: int = 500) -> List[Dict]:
+        """Get CVEs from feeds with optional filtering."""
+        all_cves = []
+
+        sources = [source] if source else list(self.feed_cves.keys())
+
+        for src in sources:
+            for cve in self.feed_cves.get(src, []):
+                if ransomware_only and not cve.get("known_ransomware"):
+                    continue
+                all_cves.append(cve)
+
+        # Sort by date_added (newest first)
+        all_cves.sort(key=lambda x: x.get("date_added", ""), reverse=True)
+        return all_cves[:limit]
+
+    def get_feed_stats(self) -> Dict:
+        """Get statistics about feed data."""
+        stats = {
+            "total_feed_iocs": 0,
+            "total_feed_cves": 0,
+            "by_source": {},
+            "by_ioc_type": {
+                "ip": 0,
+                "domain": 0,
+                "url": 0,
+                "hash": 0,
+            },
+            "by_threat_type": {},
+            "malware_families": Counter(),
+            "ransomware_cves": 0,
+            "last_updated": self.feed_last_updated,
+        }
+
+        # IOC stats
+        for source, items in self.feed_iocs.items():
+            stats["by_source"][source] = len(items)
+            stats["total_feed_iocs"] += len(items)
+
+            for item in items:
+                ioc_type = item.get("ioc_type")
+                if ioc_type in stats["by_ioc_type"]:
+                    stats["by_ioc_type"][ioc_type] += 1
+
+                threat_type = item.get("threat_type")
+                if threat_type:
+                    stats["by_threat_type"][threat_type] = \
+                        stats["by_threat_type"].get(threat_type, 0) + 1
+
+                malware = item.get("malware_family")
+                if malware:
+                    stats["malware_families"][malware] += 1
+
+        # CVE stats
+        for source, items in self.feed_cves.items():
+            stats["by_source"][source] = len(items)
+            stats["total_feed_cves"] += len(items)
+
+            for item in items:
+                if item.get("known_ransomware"):
+                    stats["ransomware_cves"] += 1
+
+        # Top malware
+        stats["top_malware"] = stats["malware_families"].most_common(20)
+        stats["malware_families"] = dict(stats["malware_families"])
+
+        return stats
+
+    def search_feeds(self, query: str, limit: int = 100) -> Dict[str, List[Dict]]:
+        """Search across all feed data."""
+        query_lower = query.lower()
+        results = {
+            "iocs": [],
+            "cves": [],
+        }
+
+        # Search IOCs
+        for items in self.feed_iocs.values():
+            for item in items:
+                if (query_lower in item.get("ioc_value", "").lower() or
+                    query_lower in (item.get("malware_family") or "").lower() or
+                    query_lower in str(item.get("tags", [])).lower()):
+                    results["iocs"].append(item)
+                    if len(results["iocs"]) >= limit:
+                        break
+
+        # Search CVEs
+        for items in self.feed_cves.values():
+            for item in items:
+                if (query_lower in item.get("cve_id", "").lower() or
+                    query_lower in item.get("vulnerability_name", "").lower() or
+                    query_lower in item.get("vendor", "").lower() or
+                    query_lower in item.get("product", "").lower()):
+                    results["cves"].append(item)
+                    if len(results["cves"]) >= limit:
+                        break
+
+        return results
+
+    def clear_feeds(self):
+        """Clear all feed data."""
+        self.feed_iocs = {}
+        self.feed_cves = {}
+        self.feed_last_updated = {}
 
 
 # Global store instance

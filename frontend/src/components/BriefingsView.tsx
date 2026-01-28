@@ -4,17 +4,14 @@ import { useState, useMemo } from 'react';
 import {
   Calendar,
   TrendingUp,
-  Lightbulb,
   ChevronRight,
   Shield,
-  Skull,
-  Target,
   FileText,
-  BarChart3,
-  ArrowUpRight
+  AlertTriangle,
+  Radio
 } from 'lucide-react';
 import { Stats, ThreatItem, BriefingPeriod } from '@/types';
-import { format, subDays, isAfter } from 'date-fns';
+import { format, subDays, isAfter, formatDistanceToNow } from 'date-fns';
 
 interface BriefingsViewProps {
   stats: Stats | null;
@@ -31,7 +28,6 @@ export default function BriefingsView({
 }: BriefingsViewProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<BriefingPeriod>('daily');
 
-  // Filter items based on period
   const periodItems = useMemo(() => {
     const now = new Date();
     const cutoff = selectedPeriod === 'daily'
@@ -43,7 +39,6 @@ export default function BriefingsView({
     return items.filter(item => isAfter(new Date(item.date), cutoff));
   }, [items, selectedPeriod]);
 
-  // Generate period-specific insights
   const periodInsights = useMemo(() => {
     const cveItems = periodItems.filter(i => i.extracted.cves.length > 0);
     const threatItems = periodItems.filter(i => i.extracted.threats.length > 0);
@@ -58,7 +53,11 @@ export default function BriefingsView({
     const topTags = Object.entries(tagCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([tag]) => tag);
+      .map(([tag, count]) => ({ tag, count }));
+
+    const priorityItems = periodItems.filter(
+      i => i.extracted.cves.length > 0 || i.extracted.actors.length > 0 || i.extracted.malware.length > 0
+    );
 
     return {
       totalArticles: periodItems.length,
@@ -66,261 +65,270 @@ export default function BriefingsView({
       threatCount: threatItems.reduce((acc, i) => acc + i.extracted.threats.length, 0),
       topTags,
       uniqueSources: new Set(periodItems.map(i => i.source)).size,
+      priorityItems: priorityItems.slice(0, 7),
     };
   }, [periodItems]);
 
-  const renderDailyBriefing = () => (
-    <div className="space-y-6">
-      {/* What Matters Today */}
-      <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-        <div className="px-6 py-4 border-b border-ink-100 bg-gradient-to-r from-paper-50 to-white">
-          <h3 className="font-display font-semibold text-ink-900">What Matters Today</h3>
-          <p className="text-sm text-ink-500 mt-1">{periodInsights.totalArticles} articles processed</p>
-        </div>
-        <div className="p-6">
-          <ul className="space-y-3">
-            {periodItems.slice(0, 7).map((item, index) => (
-              <li key={item.id} className="animate-fadeInUp" style={{ animationDelay: `${index * 50}ms` }}>
-                <button
-                  onClick={() => onItemClick(item)}
-                  className="w-full flex items-start gap-4 p-3 rounded-xl hover:bg-paper-50 transition-colors text-left group"
-                >
-                  <span className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                    item.extracted.cves.length > 0 ? 'bg-red-500' :
-                    item.extracted.threats.length > 0 ? 'bg-violet-500' : 'bg-accent-teal'
-                  }`} />
-                  <span className="flex-1 text-ink-700 text-sm group-hover:text-ink-900">{item.title}</span>
-                  <ChevronRight size={16} className="text-ink-300 group-hover:text-accent-coral mt-0.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Technique Spotlight */}
-      {periodInsights.topTags.length > 0 && (
-        <div className="insight-card">
-          <div className="pl-4 flex items-start gap-4">
-            <div className="p-2.5 rounded-xl bg-accent-teal/10 flex-shrink-0">
-              <Lightbulb size={20} className="text-accent-teal" />
-            </div>
-            <div>
-              <h4 className="font-display font-semibold text-ink-900 mb-2">Technique Spotlight</h4>
-              <p className="text-ink-600 text-sm leading-relaxed mb-3">
-                <strong className="capitalize">{periodInsights.topTags[0]?.replace(/_/g, ' ')}</strong> is the most common technique today.
-                Understanding how attackers leverage this technique will help you identify potential threats earlier.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {periodInsights.topTags.map(tag => (
-                  <span key={tag} className="tag tag-ttp capitalize">{tag.replace(/_/g, ' ')}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderWeeklyBriefing = () => (
-    <div className="space-y-6">
-      {/* This Week's Patterns */}
-      <div className="bg-white rounded-2xl border border-ink-100 shadow-soft p-6">
-        <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-          <BarChart3 size={18} className="text-accent-coral" />
-          This Week's Patterns
-        </h3>
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-paper-50 rounded-xl">
-            <div className="text-3xl font-display font-semibold text-ink-900">{periodInsights.totalArticles}</div>
-            <div className="text-xs text-ink-500 mt-1">Articles</div>
-          </div>
-          <div className="text-center p-4 bg-red-50 rounded-xl">
-            <div className="text-3xl font-display font-semibold text-red-600">{periodInsights.cveCount}</div>
-            <div className="text-xs text-ink-500 mt-1">CVEs</div>
-          </div>
-          <div className="text-center p-4 bg-violet-50 rounded-xl">
-            <div className="text-3xl font-display font-semibold text-violet-600">{periodInsights.threatCount}</div>
-            <div className="text-xs text-ink-500 mt-1">Threats</div>
-          </div>
-        </div>
-
-        {/* Top Techniques */}
-        <div>
-          <h4 className="text-xs font-semibold text-ink-400 uppercase tracking-wider mb-3">Top Techniques This Week</h4>
-          <div className="flex flex-wrap gap-2">
-            {periodInsights.topTags.map((tag, index) => (
-              <span
-                key={tag}
-                className="tag tag-ttp capitalize animate-fadeInUp"
-                style={{ animationDelay: `${index * 40}ms` }}
-              >
-                {tag.replace(/_/g, ' ')}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Recurring Threads */}
-      <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-        <div className="px-6 py-4 border-b border-ink-100">
-          <h3 className="font-display font-semibold text-ink-900">Notable Threads</h3>
-        </div>
-        <div className="divide-y divide-ink-100">
-          {periodItems.slice(0, 8).map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className="w-full p-4 text-left hover:bg-paper-50 transition-colors group animate-fadeInUp"
-              style={{ animationDelay: `${index * 40}ms` }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-ink-800 group-hover:text-ink-900 line-clamp-2 text-sm mb-2">
-                    {item.title}
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-ink-400 capitalize">{item.source}</span>
-                    {item.extracted.cves.length > 0 && (
-                      <span className="tag tag-cve text-[10px] py-0.5">{item.extracted.cves[0]}</span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-ink-300 group-hover:text-accent-coral flex-shrink-0 mt-1" />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMonthlyBriefing = () => (
-    <div className="space-y-6">
-      {/* Month in Review */}
-      <div className="bg-white rounded-2xl border border-ink-100 shadow-soft p-6">
-        <h3 className="font-display font-semibold text-ink-900 mb-2">Month in Review</h3>
-        <p className="text-ink-600 text-sm leading-relaxed mb-6">
-          This month saw <strong>{periodInsights.totalArticles}</strong> articles from <strong>{periodInsights.uniqueSources}</strong> sources,
-          identifying <strong>{periodInsights.cveCount}</strong> CVEs and <strong>{periodInsights.threatCount}</strong> threat actors.
-        </p>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-paper-50 rounded-xl border border-ink-100">
-            <FileText size={20} className="text-ink-400 mb-2" />
-            <div className="text-2xl font-display font-semibold text-ink-900">{periodInsights.totalArticles}</div>
-            <div className="text-xs text-ink-500">Total Articles</div>
-          </div>
-          <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-            <Shield size={20} className="text-red-500 mb-2" />
-            <div className="text-2xl font-display font-semibold text-red-600">{periodInsights.cveCount}</div>
-            <div className="text-xs text-ink-500">CVEs Found</div>
-          </div>
-          <div className="p-4 bg-violet-50 rounded-xl border border-violet-100">
-            <Skull size={20} className="text-violet-500 mb-2" />
-            <div className="text-2xl font-display font-semibold text-violet-600">{periodInsights.threatCount}</div>
-            <div className="text-xs text-ink-500">Threats</div>
-          </div>
-          <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
-            <Target size={20} className="text-amber-500 mb-2" />
-            <div className="text-2xl font-display font-semibold text-amber-600">{periodInsights.uniqueSources}</div>
-            <div className="text-xs text-ink-500">Sources</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Trend Summary */}
-      <div className="insight-card">
-        <div className="pl-4">
-          <h4 className="font-display font-semibold text-ink-900 mb-3">Key Trends</h4>
-          <ul className="space-y-3">
-            {periodInsights.topTags.slice(0, 3).map((tag, index) => (
-              <li key={tag} className="flex items-start gap-3 animate-fadeInUp" style={{ animationDelay: `${index * 50}ms` }}>
-                <TrendingUp size={16} className="text-accent-coral mt-0.5 flex-shrink-0" />
-                <span className="text-ink-700 text-sm">
-                  <strong className="capitalize">{tag.replace(/_/g, ' ')}</strong> techniques remained consistently present across threat reports
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* All Items */}
-      <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-        <div className="px-6 py-4 border-b border-ink-100 flex items-center justify-between">
-          <h3 className="font-display font-semibold text-ink-900">All Threads This Month</h3>
-          <span className="text-sm text-ink-500">{periodItems.length} total</span>
-        </div>
-        <div className="divide-y divide-ink-100 max-h-96 overflow-y-auto">
-          {periodItems.map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className="w-full p-4 text-left hover:bg-paper-50 transition-colors group"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="font-medium text-ink-700 group-hover:text-ink-900 line-clamp-1 text-sm flex-1">
-                  {item.title}
-                </h4>
-                <span className="text-xs text-ink-400 flex-shrink-0">
-                  {format(new Date(item.date), 'MMM d')}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  const getSeverityLevel = (item: ThreatItem) => {
+    if (item.extracted.cves.length > 0) return 'critical';
+    if (item.extracted.malware.length > 0 || item.extracted.actors.length > 0) return 'high';
+    if (item.extracted.tags.includes('ransomware')) return 'critical';
+    return 'medium';
+  };
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
-        <div className="h-12 bg-paper-200 rounded-xl" />
-        <div className="h-64 bg-paper-200 rounded-2xl" />
+      <div className="p-6 space-y-6">
+        <div className="h-12 skeleton rounded-lg" />
+        <div className="h-24 skeleton rounded-xl" />
+        <div className="h-64 skeleton rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-ink-900 tracking-tight">
-            Briefings
-          </h1>
-          <p className="text-ink-500 mt-1">
-            Curated threat intelligence summaries
-          </p>
+    <div className="h-full overflow-y-auto bg-slate-50">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">Intelligence Briefings</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Curated threat intelligence summaries
+            </p>
+          </div>
+
+          {/* Period Tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            {(['daily', 'weekly', 'monthly'] as const).map((period) => (
+              <button
+                key={period}
+                onClick={() => setSelectedPeriod(period)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors capitalize ${
+                  selectedPeriod === period
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Calendar size={14} />
+                {period}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-3">
+              <FileText size={18} className="text-blue-500" />
+              <div>
+                <div className="text-2xl font-semibold text-slate-900">{periodInsights.totalArticles}</div>
+                <div className="text-sm text-slate-500">Intel Items</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-slate-200 border-l-4 border-l-red-500">
+            <div className="flex items-center gap-3">
+              <Shield size={18} className="text-red-500" />
+              <div>
+                <div className="text-2xl font-semibold text-red-600">{periodInsights.cveCount}</div>
+                <div className="text-sm text-slate-500">CVEs Found</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-slate-200 border-l-4 border-l-purple-500">
+            <div className="flex items-center gap-3">
+              <AlertTriangle size={18} className="text-purple-500" />
+              <div>
+                <div className="text-2xl font-semibold text-purple-600">{periodInsights.threatCount}</div>
+                <div className="text-sm text-slate-500">Threats</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-slate-200 border-l-4 border-l-amber-500">
+            <div className="flex items-center gap-3">
+              <Radio size={18} className="text-amber-500" />
+              <div>
+                <div className="text-2xl font-semibold text-amber-600">{periodInsights.uniqueSources}</div>
+                <div className="text-sm text-slate-500">Sources</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Priority Intelligence */}
+        <div className="bg-white rounded-lg border border-slate-200">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={18} className="text-red-500" />
+              <div>
+                <h3 className="font-medium text-slate-900">Priority Intelligence</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {selectedPeriod === 'daily' ? 'Last 24 hours' : selectedPeriod === 'weekly' ? 'Last 7 days' : 'Last 30 days'}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-slate-500">
+              {periodInsights.priorityItems.length} items
+            </span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {periodInsights.priorityItems.length === 0 ? (
+              <div className="p-8 text-center">
+                <Radio size={32} className="mx-auto text-slate-300 mb-2" />
+                <p className="text-slate-500 text-sm">No priority intel for this period.</p>
+              </div>
+            ) : (
+              periodInsights.priorityItems.map((item) => {
+                const severity = getSeverityLevel(item);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onItemClick(item)}
+                    className="w-full p-4 text-left hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-1 h-12 rounded-full flex-shrink-0 ${
+                        severity === 'critical' ? 'bg-red-500' :
+                        severity === 'high' ? 'bg-orange-500' : 'bg-amber-500'
+                      }`} />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-medium ${
+                            severity === 'critical' ? 'bg-red-100 text-red-700' :
+                            severity === 'high' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {severity}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm text-slate-800 group-hover:text-slate-900 line-clamp-2 transition-colors">
+                          {item.title}
+                        </h4>
+
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          {item.extracted.cves.slice(0, 2).map(cve => (
+                            <span key={cve} className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded">
+                              {cve}
+                            </span>
+                          ))}
+                          {item.extracted.actors.slice(0, 1).map(actor => (
+                            <span key={actor} className="text-[10px] px-1.5 py-0.5 bg-pink-50 text-pink-600 rounded">
+                              {actor}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-1 transition-colors" />
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Two column section */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Trending Techniques */}
+          {periodInsights.topTags.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} className="text-blue-500" />
+                <h3 className="font-medium text-slate-800 text-sm">Trending Techniques</h3>
+              </div>
+              <div className="space-y-3">
+                {periodInsights.topTags.map((tech) => (
+                  <div key={tech.tag} className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 capitalize">{tech.tag.replace(/_/g, ' ')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400">{tech.count}</span>
+                      <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${(tech.count / periodInsights.topTags[0].count) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Key Insight */}
+          <div className="bg-white rounded-lg border border-slate-200 border-l-4 border-l-amber-500 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle size={16} className="text-amber-500" />
+              <h3 className="font-medium text-slate-800 text-sm">Key Insight</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {periodInsights.topTags.length > 0 ? (
+                <>
+                  <span className="text-amber-600 font-medium capitalize">
+                    {periodInsights.topTags[0].tag.replace(/_/g, ' ')}
+                  </span>{' '}
+                  is the dominant technique this {selectedPeriod === 'daily' ? 'day' : selectedPeriod === 'weekly' ? 'week' : 'month'}, appearing in{' '}
+                  <span className="font-medium text-slate-800">{periodInsights.topTags[0].count}</span> intel items.
+                  Focus defensive monitoring on this attack vector.
+                </>
+              ) : (
+                'Sync intel to generate insights for this period.'
+              )}
+            </p>
+            {periodInsights.topTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-4">
+                {periodInsights.topTags.slice(0, 3).map(tech => (
+                  <span key={tech.tag} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded capitalize">
+                    {tech.tag.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* All Items */}
+        <div className="bg-white rounded-lg border border-slate-200">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="font-medium text-slate-800 text-sm">
+              All Intel ({selectedPeriod === 'daily' ? 'Today' : selectedPeriod === 'weekly' ? 'This Week' : 'This Month'})
+            </h3>
+            <span className="text-xs text-slate-500">{periodItems.length} items</span>
+          </div>
+          <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+            {periodItems.slice(0, 15).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onItemClick(item)}
+                className="w-full p-3 text-left hover:bg-slate-50 transition-colors group"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      item.extracted.cves.length > 0 ? 'bg-red-500' :
+                      item.extracted.threats.length > 0 ? 'bg-purple-500' : 'bg-blue-500'
+                    }`} />
+                    <h4 className="text-sm text-slate-600 group-hover:text-slate-900 line-clamp-1 transition-colors">
+                      {item.title}
+                    </h4>
+                  </div>
+                  <span className="text-xs text-slate-400 flex-shrink-0">
+                    {format(new Date(item.date), 'MMM d')}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Period Tabs */}
-      <div className="flex items-center gap-1 bg-paper-100 rounded-xl p-1 w-fit">
-        {(['daily', 'weekly', 'monthly'] as const).map((period) => (
-          <button
-            key={period}
-            onClick={() => setSelectedPeriod(period)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 capitalize ${
-              selectedPeriod === period
-                ? 'bg-white text-ink-900 shadow-soft'
-                : 'text-ink-500 hover:text-ink-700'
-            }`}
-          >
-            <Calendar size={16} />
-            {period}
-          </button>
-        ))}
-      </div>
-
-      {/* Period Content */}
-      {selectedPeriod === 'daily' && renderDailyBriefing()}
-      {selectedPeriod === 'weekly' && renderWeeklyBriefing()}
-      {selectedPeriod === 'monthly' && renderMonthlyBriefing()}
     </div>
   );
 }

@@ -66,23 +66,97 @@ MALWARE_FAMILIES = [
 # TTP keyword mappings
 TTP_KEYWORDS = {
     "phishing": ["phishing", "spear-phishing", "spearphishing", "credential harvesting",
-                 "social engineering", "malicious email", "phish"],
+                 "social engineering", "malicious email", "phish", "bec", "business email compromise"],
     "ransomware": ["ransomware", "ransom", "encrypt", "decryptor", "double extortion",
-                   "data leak site", "extortion"],
+                   "data leak site", "extortion", "triple extortion"],
     "credential_theft": ["credential", "password", "stealer", "infostealer", "keylogger",
-                        "mimikatz", "dump", "lsass", "ntds"],
+                        "mimikatz", "dump", "lsass", "ntds", "credential stuffing"],
     "lateral_movement": ["lateral movement", "psexec", "wmi", "rdp", "smb", "pass the hash",
-                        "pass the ticket", "pivoting"],
-    "c2": ["command and control", "c2", "c&c", "beacon", "callback", "implant"],
+                        "pass the ticket", "pivoting", "bloodhound"],
+    "c2": ["command and control", "c2", "c&c", "beacon", "callback", "implant", "cobalt strike"],
     "persistence": ["persistence", "scheduled task", "registry", "startup", "service",
-                   "backdoor", "webshell"],
+                   "backdoor", "webshell", "rootkit"],
     "exploitation": ["exploit", "vulnerability", "zero-day", "0day", "rce", "remote code execution",
-                    "buffer overflow", "injection"],
-    "data_exfiltration": ["exfiltration", "data theft", "data leak", "exfil", "staging"],
+                    "buffer overflow", "injection", "cve-"],
+    "data_exfiltration": ["exfiltration", "data theft", "data leak", "exfil", "staging", "data breach"],
     "initial_access": ["initial access", "drive-by", "watering hole", "supply chain",
-                      "compromised", "trojanized"],
+                      "compromised", "trojanized", "malvertising"],
     "defense_evasion": ["evasion", "obfuscation", "packing", "anti-analysis", "sandbox",
-                       "disable", "bypass"],
+                       "disable", "bypass", "living off the land", "lolbin"],
+    # AI-related TTPs
+    "ai_attack": ["prompt injection", "jailbreak", "model poisoning", "adversarial",
+                  "llm attack", "ai attack", "model extraction", "membership inference",
+                  "data poisoning", "backdoor attack", "trojan model"],
+    "ai_abuse": ["deepfake", "synthetic media", "ai-generated", "voice cloning",
+                 "face swap", "ai fraud", "chatgpt", "gpt-4", "claude", "llm",
+                 "generative ai", "ai-powered malware", "ai phishing"],
+    "ai_supply_chain": ["model supply chain", "hugging face", "pytorch", "tensorflow",
+                        "model hub", "ai pipeline", "mlops", "model registry"],
+}
+
+# Product/Technology keywords for categorization
+PRODUCTS = {
+    # Cloud Platforms
+    "aws": ["aws", "amazon web services", "s3 bucket", "ec2", "lambda", "cloudfront"],
+    "azure": ["azure", "microsoft azure", "azure ad", "entra", "office 365", "o365", "m365"],
+    "gcp": ["google cloud", "gcp", "bigquery", "cloud run"],
+    # Security Products
+    "crowdstrike": ["crowdstrike", "falcon"],
+    "sentinelone": ["sentinelone", "sentinel one"],
+    "palo_alto": ["palo alto", "pan-os", "cortex", "prisma"],
+    "fortinet": ["fortinet", "fortigate", "fortios"],
+    "cisco": ["cisco", "meraki", "umbrella", "firepower"],
+    # Enterprise Software
+    "microsoft": ["microsoft", "windows", "exchange", "sharepoint", "teams", "outlook"],
+    "vmware": ["vmware", "esxi", "vcenter", "horizon"],
+    "citrix": ["citrix", "netscaler", "xenapp"],
+    "oracle": ["oracle", "weblogic", "e-business"],
+    "sap": ["sap", "s4hana", "netweaver"],
+    "salesforce": ["salesforce", "sfdc"],
+    # Network/Infrastructure
+    "ivanti": ["ivanti", "pulse secure", "mobileiron"],
+    "f5": ["f5", "big-ip", "nginx"],
+    "juniper": ["juniper", "junos"],
+    "sophos": ["sophos"],
+    # AI/ML Platforms
+    "openai": ["openai", "chatgpt", "gpt-4", "gpt-3", "dall-e"],
+    "anthropic": ["anthropic", "claude"],
+    "google_ai": ["gemini", "bard", "palm", "vertex ai"],
+    "huggingface": ["hugging face", "huggingface", "transformers"],
+}
+
+# Geographic regions/countries
+GEOGRAPHY = {
+    "russia": ["russia", "russian", "moscow", "kremlin", "fsb", "gru", "svr"],
+    "china": ["china", "chinese", "beijing", "prc", "pla", "mss", "apt1", "apt10", "apt41"],
+    "north_korea": ["north korea", "dprk", "pyongyang", "lazarus", "kimsuky", "apt38"],
+    "iran": ["iran", "iranian", "tehran", "irgc", "apt33", "apt34", "apt35", "charming kitten", "muddywater"],
+    "usa": ["united states", "usa", "us-cert", "cisa", "fbi", "nsa"],
+    "uk": ["united kingdom", "uk", "ncsc", "gchq", "britain", "british"],
+    "eu": ["european union", "eu", "europe", "enisa", "europol"],
+    "israel": ["israel", "israeli", "mossad", "unit 8200"],
+    "ukraine": ["ukraine", "ukrainian", "kyiv"],
+    "india": ["india", "indian", "cert-in"],
+    "australia": ["australia", "australian", "acsc"],
+    "japan": ["japan", "japanese", "jpcert"],
+    "south_korea": ["south korea", "korean", "krcert"],
+}
+
+# Industry sectors
+SECTORS = {
+    "financial": ["bank", "banking", "financial", "finance", "fintech", "payment", "swift", "crypto", "cryptocurrency", "defi"],
+    "healthcare": ["healthcare", "hospital", "medical", "health", "hipaa", "pharma", "pharmaceutical"],
+    "government": ["government", "federal", "state", "municipal", "public sector", "defense", "military", "dod"],
+    "energy": ["energy", "oil", "gas", "utility", "power grid", "scada", "ics", "ot", "industrial control"],
+    "technology": ["technology", "tech", "software", "saas", "cloud", "it services", "msp"],
+    "education": ["education", "university", "school", "academic", "research"],
+    "retail": ["retail", "e-commerce", "ecommerce", "pos", "point of sale", "merchant"],
+    "manufacturing": ["manufacturing", "industrial", "factory", "supply chain", "logistics"],
+    "telecom": ["telecom", "telecommunications", "carrier", "5g", "mobile network"],
+    "transportation": ["transportation", "aviation", "airline", "maritime", "shipping", "rail"],
+    "media": ["media", "entertainment", "news", "broadcast", "streaming"],
+    "legal": ["legal", "law firm", "attorney"],
+    "critical_infrastructure": ["critical infrastructure", "water", "dam", "nuclear", "pipeline"],
 }
 
 # Common false positive domains to exclude
@@ -105,6 +179,9 @@ class ExtractedEntities:
     malware: List[str] = field(default_factory=list)
     actors: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)  # TTP tags
+    products: List[str] = field(default_factory=list)  # Affected products/technologies
+    geography: List[str] = field(default_factory=list)  # Geographic regions
+    sectors: List[str] = field(default_factory=list)  # Industry sectors
 
     def to_dict(self) -> Dict:
         return {
@@ -117,6 +194,9 @@ class ExtractedEntities:
             "malware": self.malware,
             "actors": self.actors,
             "tags": self.tags,
+            "products": self.products,
+            "geography": self.geography,
+            "sectors": self.sectors,
         }
 
     @property
@@ -257,6 +337,42 @@ def extract_ttp_tags(text: str) -> List[str]:
     return tags
 
 
+def extract_products(text: str) -> List[str]:
+    """Extract affected products/technologies from text."""
+    text_lower = text.lower()
+    found = []
+    for product, keywords in PRODUCTS.items():
+        for keyword in keywords:
+            if keyword in text_lower:
+                found.append(product)
+                break
+    return found
+
+
+def extract_geography(text: str) -> List[str]:
+    """Extract geographic regions/countries from text."""
+    text_lower = text.lower()
+    found = []
+    for region, keywords in GEOGRAPHY.items():
+        for keyword in keywords:
+            if keyword in text_lower:
+                found.append(region)
+                break
+    return found
+
+
+def extract_sectors(text: str) -> List[str]:
+    """Extract industry sectors from text."""
+    text_lower = text.lower()
+    found = []
+    for sector, keywords in SECTORS.items():
+        for keyword in keywords:
+            if keyword in text_lower:
+                found.append(sector)
+                break
+    return found
+
+
 def extract_all(text: str) -> ExtractedEntities:
     """Extract all threat intelligence entities from text."""
     entities = ExtractedEntities()
@@ -273,6 +389,9 @@ def extract_all(text: str) -> ExtractedEntities:
     entities.actors = actors
 
     entities.tags = extract_ttp_tags(text)
+    entities.products = extract_products(text)
+    entities.geography = extract_geography(text)
+    entities.sectors = extract_sectors(text)
 
     return entities
 

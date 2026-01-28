@@ -1,16 +1,18 @@
 'use client';
 
 import {
-  Radar,
+  Activity,
   FileText,
   TrendingUp,
   Layers,
-  BookOpen,
-  GraduationCap,
+  Database,
   Settings,
   RefreshCw,
   Upload,
-  ChevronRight
+  Shield,
+  AlertTriangle,
+  Users,
+  Crosshair,
 } from 'lucide-react';
 import { ViewType, Stats } from '@/types';
 import { format } from 'date-fns';
@@ -34,42 +36,32 @@ export default function Sidebar({
   isSyncing,
   isUploading
 }: SidebarProps) {
-  const navItems: { id: ViewType; label: string; icon: React.ReactNode; description: string }[] = [
+  const navItems: { id: ViewType; label: string; icon: React.ReactNode; badge?: number }[] = [
     {
       id: 'today',
-      label: 'Today',
-      icon: <Radar size={20} />,
-      description: 'Daily briefing'
+      label: 'Dashboard',
+      icon: <Activity size={18} />,
     },
     {
       id: 'briefings',
       label: 'Briefings',
-      icon: <FileText size={20} />,
-      description: 'Daily, weekly, monthly'
-    },
-    {
-      id: 'trends',
-      label: 'Trends',
-      icon: <TrendingUp size={20} />,
-      description: 'Patterns & shifts'
+      icon: <FileText size={18} />,
     },
     {
       id: 'threads',
-      label: 'Threads',
-      icon: <Layers size={20} />,
-      description: 'Threat stories'
+      label: 'Articles',
+      icon: <Layers size={18} />,
+      badge: stats?.total_items
     },
     {
-      id: 'playbooks',
-      label: 'Playbooks',
-      icon: <BookOpen size={20} />,
-      description: 'Attack flows'
+      id: 'feeds',
+      label: 'Threat Feeds',
+      icon: <Database size={18} />,
     },
     {
-      id: 'learning',
-      label: 'Learning',
-      icon: <GraduationCap size={20} />,
-      description: 'Your queue'
+      id: 'trends',
+      label: 'Analysis',
+      icon: <TrendingUp size={18} />,
     },
   ];
 
@@ -80,103 +72,83 @@ export default function Sidebar({
     }
   };
 
+  // Calculate impactful metrics
+  const criticalAlerts = stats?.top_cves?.length || 0;
+  const activeActors = stats?.all_actors?.length || 0;
+  const attackSurface = stats?.product_counts ? Object.keys(stats.product_counts).length : 0;
+
   return (
-    <aside className="w-72 bg-white border-r border-ink-100 flex flex-col h-full relative">
-      {/* Logo Section */}
-      <div className="p-6 border-b border-ink-100">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-coral to-accent-amber flex items-center justify-center shadow-soft">
-            <Radar size={22} className="text-white" />
+    <aside className="w-56 bg-white border-r border-slate-200 flex flex-col h-full">
+      {/* Logo */}
+      <div className="p-4 border-b border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
+            <Shield size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="font-display font-semibold text-lg text-ink-900 tracking-tight">
-              Threat Radar
-            </h1>
-            <p className="text-xs text-ink-400 font-medium">
-              Intelligence Briefings
-            </p>
+            <h1 className="font-semibold text-slate-900 tracking-tight">IntelMesh</h1>
+            <p className="text-[10px] text-slate-400 font-medium">{format(new Date(), 'MMM d, yyyy')}</p>
           </div>
-        </div>
-
-        {/* Today's date */}
-        <div className="mt-4 flex items-center justify-between">
-          <span className="date-badge">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-coral" />
-            {format(new Date(), 'EEEE, MMM d')}
-          </span>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Impactful Stats */}
       {stats && (
-        <div className="px-6 py-4 border-b border-ink-100 bg-paper-50">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="text-center">
-              <div className="text-2xl font-display font-semibold text-ink-900">
-                {stats.total_items}
+        <div className="p-3 border-b border-slate-200">
+          <div className="space-y-2">
+            {/* Critical Alerts */}
+            <div className="flex items-center justify-between p-2 bg-red-50 rounded-lg border border-red-100">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={14} className="text-red-500" />
+                <span className="text-xs font-medium text-slate-700">Critical Vulns</span>
               </div>
-              <div className="text-xs text-ink-400 font-medium">Articles</div>
+              <span className="text-sm font-semibold text-red-600">{criticalAlerts}</span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-display font-semibold text-accent-coral">
-                {stats.total_cves}
+
+            {/* Active Threat Actors */}
+            <div className="flex items-center justify-between p-2 bg-purple-50 rounded-lg border border-purple-100">
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-purple-500" />
+                <span className="text-xs font-medium text-slate-700">Active Actors</span>
               </div>
-              <div className="text-xs text-ink-400 font-medium">CVEs</div>
+              <span className="text-sm font-semibold text-purple-600">{activeActors}</span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-display font-semibold text-accent-amber">
-                {stats.total_iocs}
+
+            {/* Attack Surface */}
+            <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex items-center gap-2">
+                <Crosshair size={14} className="text-blue-500" />
+                <span className="text-xs font-medium text-slate-700">Products at Risk</span>
               </div>
-              <div className="text-xs text-ink-400 font-medium">IoCs</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-display font-semibold text-accent-violet">
-                {stats.total_threats}
-              </div>
-              <div className="text-xs text-ink-400 font-medium">Threats</div>
+              <span className="text-sm font-semibold text-blue-600">{attackSurface}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <p className="text-xs font-semibold text-ink-300 uppercase tracking-wider mb-3 px-3">
-          Navigation
-        </p>
-        <ul className="space-y-1">
-          {navItems.map((item, index) => {
+      <nav className="flex-1 p-2 overflow-y-auto">
+        <ul className="space-y-0.5">
+          {navItems.map((item) => {
             const isActive = currentView === item.id;
-
             return (
-              <li
-                key={item.id}
-                className="animate-fadeInUp"
-                style={{ animationDelay: `${index * 40}ms` }}
-              >
+              <li key={item.id}>
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-accent-coral/10 text-accent-coral'
-                      : 'text-ink-600 hover:bg-paper-200 hover:text-ink-800'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
-                      {item.icon}
+                  {item.icon}
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      isActive ? 'bg-white/20' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {item.badge}
                     </span>
-                    <div className="text-left">
-                      <span className={`block text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                        {item.label}
-                      </span>
-                      <span className={`block text-xs ${isActive ? 'text-accent-coral/70' : 'text-ink-400'}`}>
-                        {item.description}
-                      </span>
-                    </div>
-                  </div>
-                  {isActive && (
-                    <ChevronRight size={16} className="text-accent-coral" />
                   )}
                 </button>
               </li>
@@ -186,19 +158,19 @@ export default function Sidebar({
       </nav>
 
       {/* Actions */}
-      <div className="p-4 border-t border-ink-100 space-y-2">
+      <div className="p-3 border-t border-slate-200 space-y-2">
         <button
           onClick={onSync}
           disabled={isSyncing}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ink-900 text-white font-medium text-sm transition-all duration-200 hover:bg-ink-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
         >
-          <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
           {isSyncing ? 'Syncing...' : 'Sync News'}
         </button>
 
-        <label className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-ink-200 text-ink-700 font-medium text-sm transition-all duration-200 hover:bg-paper-100 cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-          <Upload size={16} className={isUploading ? 'animate-pulse' : ''} />
-          {isUploading ? 'Uploading...' : 'Upload PDFs'}
+        <label className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 cursor-pointer transition-colors">
+          <Upload size={14} />
+          Upload PDF
           <input
             type="file"
             accept=".pdf"
@@ -210,25 +182,19 @@ export default function Sidebar({
         </label>
       </div>
 
-      {/* Settings & Footer */}
-      <div className="p-4 border-t border-ink-100">
+      {/* Settings */}
+      <div className="p-2 border-t border-slate-200">
         <button
           onClick={() => onViewChange('settings')}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             currentView === 'settings'
-              ? 'bg-paper-200 text-ink-800'
-              : 'text-ink-500 hover:bg-paper-100 hover:text-ink-700'
+              ? 'bg-slate-100 text-slate-900'
+              : 'text-slate-500 hover:bg-slate-50'
           }`}
         >
-          <Settings size={18} className="group-hover:rotate-45 transition-transform duration-300" />
-          <span className="text-sm font-medium">Settings</span>
+          <Settings size={18} />
+          <span>Settings</span>
         </button>
-
-        {/* Version info */}
-        <div className="mt-3 px-3 flex items-center justify-between text-xs text-ink-300">
-          <span className="font-mono">v2.0.0</span>
-          <span>Cyber Threat Radar</span>
-        </div>
       </div>
     </aside>
   );

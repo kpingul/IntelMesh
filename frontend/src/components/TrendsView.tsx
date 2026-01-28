@@ -3,19 +3,15 @@
 import { useState, useMemo } from 'react';
 import {
   TrendingUp,
-  TrendingDown,
-  Minus,
   AlertTriangle,
   Shield,
   Target,
-  Skull,
-  ArrowUpRight,
-  ArrowDownRight,
-  Lightbulb
+  Activity,
+  BarChart3
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+  PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { Stats, ThreatItem } from '@/types';
 
@@ -28,12 +24,12 @@ interface TrendsViewProps {
 type TimeRange = '7d' | '30d' | '90d';
 
 const CHART_COLORS = {
-  coral: '#E85D4C',
-  amber: '#D4940A',
-  teal: '#0F8B8D',
-  violet: '#7C3AED',
-  ocean: '#2563EB',
-  slate: '#475569',
+  blue: '#3b82f6',
+  red: '#ef4444',
+  amber: '#f59e0b',
+  purple: '#8b5cf6',
+  green: '#22c55e',
+  cyan: '#06b6d4',
 };
 
 export default function TrendsView({
@@ -43,74 +39,56 @@ export default function TrendsView({
 }: TrendsViewProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
 
-  // Generate insights based on stats
   const insights = useMemo(() => {
     if (!stats) return [];
 
-    const insights: { text: string; type: 'rising' | 'falling' | 'persistent' | 'new'; icon: React.ReactNode }[] = [];
+    const insights: { text: string; type: 'rising' | 'persistent' | 'critical'; metric: string }[] = [];
 
-    // Check for dominant techniques
     const topTechniques = Object.entries(stats.tag_counts).sort((a, b) => b[1] - a[1]);
     if (topTechniques.length > 0) {
       const [technique, count] = topTechniques[0];
       insights.push({
-        text: `${technique.replace(/_/g, ' ')} is the most common technique with ${count} occurrences`,
+        text: `${technique.replace(/_/g, ' ')} technique detected ${count}x`,
         type: 'rising',
-        icon: <TrendingUp size={16} className="text-accent-coral" />
+        metric: technique
       });
     }
 
-    // CVE activity
-    if (stats.total_cves > 5) {
+    if (stats.total_cves > 0) {
       insights.push({
-        text: `High CVE activity: ${stats.total_cves} vulnerabilities being actively discussed`,
-        type: 'rising',
-        icon: <AlertTriangle size={16} className="text-red-500" />
+        text: `${stats.total_cves} CVEs actively being exploited`,
+        type: 'critical',
+        metric: 'CVEs'
       });
     }
 
-    // Threat actors
     if (stats.all_actors.length > 0) {
       insights.push({
-        text: `${stats.all_actors.length} threat actors mentioned across sources`,
+        text: `${stats.all_actors.length} threat actors identified`,
         type: 'persistent',
-        icon: <Skull size={16} className="text-violet-500" />
+        metric: 'Actors'
       });
     }
 
-    // IoC types
-    const mostIocs = Object.entries(stats.ioc_breakdown)
-      .sort((a, b) => b[1] - a[1])[0];
-    if (mostIocs && mostIocs[1] > 0) {
+    const totalIocs = stats.ioc_breakdown.ips + stats.ioc_breakdown.domains + stats.ioc_breakdown.hashes + stats.ioc_breakdown.urls;
+    if (totalIocs > 0) {
       insights.push({
-        text: `${mostIocs[0].charAt(0).toUpperCase() + mostIocs[0].slice(1)} are the most extracted IoC type (${mostIocs[1]} found)`,
-        type: 'persistent',
-        icon: <Target size={16} className="text-amber-500" />
+        text: `${totalIocs} indicators of compromise extracted`,
+        type: 'rising',
+        metric: 'IoCs'
       });
     }
 
     return insights.slice(0, 4);
   }, [stats]);
 
-  // Chart data
-  const sourceData = useMemo(() => {
-    if (!stats) return [];
-    return Object.entries(stats.sources)
-      .filter(([, count]) => count > 0)
-      .map(([name, value]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        value,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [stats]);
-
   const iocData = useMemo(() => {
     if (!stats) return [];
     return [
       { name: 'IPs', value: stats.ioc_breakdown.ips, fill: CHART_COLORS.amber },
-      { name: 'Domains', value: stats.ioc_breakdown.domains, fill: CHART_COLORS.ocean },
-      { name: 'Hashes', value: stats.ioc_breakdown.hashes, fill: CHART_COLORS.teal },
-      { name: 'URLs', value: stats.ioc_breakdown.urls, fill: CHART_COLORS.violet },
+      { name: 'Domains', value: stats.ioc_breakdown.domains, fill: CHART_COLORS.blue },
+      { name: 'Hashes', value: stats.ioc_breakdown.hashes, fill: CHART_COLORS.cyan },
+      { name: 'URLs', value: stats.ioc_breakdown.urls, fill: CHART_COLORS.purple },
     ].filter(d => d.value > 0);
   }, [stats]);
 
@@ -122,15 +100,28 @@ export default function TrendsView({
       .map(([tag, count]) => ({
         name: tag.replace(/_/g, ' '),
         count,
+        fullMark: Math.max(...Object.values(stats.tag_counts)),
+      }));
+  }, [stats]);
+
+  const radarData = useMemo(() => {
+    if (!stats) return [];
+    return Object.entries(stats.tag_counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([tag, count]) => ({
+        technique: tag.replace(/_/g, ' ').slice(0, 12),
+        value: count,
+        fullMark: Math.max(...Object.values(stats.tag_counts)),
       }));
   }, [stats]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white border border-ink-100 rounded-xl px-4 py-3 shadow-elevated">
-          <p className="text-ink-900 font-medium text-sm">{label || payload[0].name}</p>
-          <p className="text-accent-coral font-mono text-lg font-semibold mt-1">{payload[0].value}</p>
+        <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+          <p className="text-slate-700 text-xs font-medium">{label || payload[0].name}</p>
+          <p className="text-blue-600 font-semibold text-lg">{payload[0].value}</p>
         </div>
       );
     }
@@ -139,11 +130,16 @@ export default function TrendsView({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-paper-200 rounded-lg w-48" />
+      <div className="p-6 space-y-6">
+        <div className="h-12 skeleton rounded-lg" />
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 skeleton rounded-xl" />
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-6">
-          <div className="h-64 bg-paper-200 rounded-2xl" />
-          <div className="h-64 bg-paper-200 rounded-2xl" />
+          <div className="h-64 skeleton rounded-xl" />
+          <div className="h-64 skeleton rounded-xl" />
         </div>
       </div>
     );
@@ -151,233 +147,244 @@ export default function TrendsView({
 
   if (!stats) {
     return (
-      <div className="text-center py-16">
-        <TrendingUp size={48} className="mx-auto text-ink-300 mb-4" />
-        <h3 className="font-display text-lg font-semibold text-ink-700 mb-2">No trend data available</h3>
-        <p className="text-ink-500">Sync news to see trend analysis</p>
+      <div className="flex flex-col items-center justify-center h-full text-center bg-slate-50">
+        <TrendingUp size={48} className="text-slate-300 mb-4" />
+        <h3 className="text-lg font-medium text-slate-700 mb-2">No trend data available</h3>
+        <p className="text-sm text-slate-500">Sync intel to see trend analysis</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-ink-900 tracking-tight">
-            Trends & Patterns
-          </h1>
-          <p className="text-ink-500 mt-1">
-            Identify recurring themes, technique clusters, and shifts over time
-          </p>
+    <div className="h-full overflow-y-auto bg-slate-50">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">Trend Analysis</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Pattern recognition and threat landscape insights
+            </p>
+          </div>
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            {(['7d', '30d', '90d'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  timeRange === range
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-paper-100 rounded-xl p-1">
-          {(['7d', '30d', '90d'] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                timeRange === range
-                  ? 'bg-white text-ink-900 shadow-soft'
-                  : 'text-ink-500 hover:text-ink-700'
+
+        {/* Insight Cards */}
+        <div className="grid grid-cols-4 gap-4">
+          {insights.map((insight, index) => (
+            <div
+              key={index}
+              className={`bg-white p-4 rounded-lg border border-slate-200 border-l-4 ${
+                insight.type === 'critical' ? 'border-l-red-500' :
+                insight.type === 'rising' ? 'border-l-blue-500' : 'border-l-purple-500'
               }`}
             >
-              {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
-            </button>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${
+                  insight.type === 'critical' ? 'bg-red-100' :
+                  insight.type === 'rising' ? 'bg-blue-100' : 'bg-purple-100'
+                }`}>
+                  {insight.type === 'critical' ? (
+                    <AlertTriangle size={16} className="text-red-600" />
+                  ) : insight.type === 'rising' ? (
+                    <TrendingUp size={16} className="text-blue-600" />
+                  ) : (
+                    <Activity size={16} className="text-purple-600" />
+                  )}
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {insight.text}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
-      </div>
 
-      {/* Insights Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {insights.map((insight, index) => (
-          <div
-            key={index}
-            className="insight-card animate-fadeInUp"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="pl-4 flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-paper-100 flex-shrink-0">
-                {insight.icon}
+        {/* Charts Grid */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Technique Distribution - Radar */}
+          {radarData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 size={16} className="text-blue-500" />
+                <h3 className="font-medium text-slate-800 text-sm">Attack Technique Radar</h3>
               </div>
-              <p className="text-sm text-ink-700 leading-relaxed">
-                {insight.text}
-              </p>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis
+                      dataKey="technique"
+                      tick={{ fill: '#64748b', fontSize: 10 }}
+                    />
+                    <PolarRadiusAxis
+                      stroke="#e2e8f0"
+                      tick={{ fill: '#94a3b8', fontSize: 9 }}
+                    />
+                    <Radar
+                      name="Occurrences"
+                      dataKey="value"
+                      stroke={CHART_COLORS.blue}
+                      fill={CHART_COLORS.blue}
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Source Distribution */}
-        {sourceData.length > 0 && (
-          <div className="bg-white rounded-2xl border border-ink-100 p-6 shadow-soft">
-            <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-              <TrendingUp size={18} className="text-accent-coral" />
-              Source Distribution
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sourceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={3}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {sourceData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={Object.values(CHART_COLORS)[index % Object.values(CHART_COLORS).length]}
+          {/* IoC Breakdown - Donut */}
+          {iocData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Target size={16} className="text-amber-500" />
+                <h3 className="font-medium text-slate-800 text-sm">IoC Distribution</h3>
+              </div>
+              <div className="h-64 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={iocData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {iocData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap justify-center gap-4 mt-4">
+                {iocData.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: entry.fill }}
+                    />
+                    <span className="text-xs text-slate-600">{entry.name}</span>
+                    <span className="text-xs text-slate-400">({entry.value})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top CVEs */}
+          {stats.top_cves.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield size={16} className="text-red-500" />
+                <h3 className="font-medium text-slate-800 text-sm">Top CVEs</h3>
+              </div>
+              <div className="space-y-3">
+                {stats.top_cves.slice(0, 6).map(([cve, count], i) => (
+                  <div key={i} className="group">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <code className="text-xs text-red-600 group-hover:text-red-700 transition-colors">
+                        {cve}
+                      </code>
+                      <span className="text-xs text-slate-400">{count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-red-500 transition-all duration-500"
+                        style={{ width: `${(count / stats.top_cves[0][1]) * 100}%` }}
                       />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {sourceData.map((entry, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: Object.values(CHART_COLORS)[i % Object.values(CHART_COLORS).length] }}
-                  />
-                  <span className="text-sm text-ink-600 font-medium">{entry.name}</span>
-                  <span className="text-sm text-ink-400 font-mono">({entry.value})</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* IoC Breakdown */}
-        {iocData.length > 0 && (
-          <div className="bg-white rounded-2xl border border-ink-100 p-6 shadow-soft">
-            <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-              <Target size={18} className="text-accent-amber" />
-              IoC Breakdown
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={iocData} layout="vertical" barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E8E5DE" horizontal={false} />
-                  <XAxis type="number" stroke="#9B9589" tick={{ fontSize: 12 }} />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    stroke="#9B9589"
-                    width={70}
-                    tick={{ fontSize: 12, fill: '#5C5850' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(232, 93, 76, 0.05)' }} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Top CVEs */}
-        {stats.top_cves.length > 0 && (
-          <div className="bg-white rounded-2xl border border-ink-100 p-6 shadow-soft">
-            <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-              <Shield size={18} className="text-red-500" />
-              Top CVEs
-            </h3>
-            <div className="space-y-4">
-              {stats.top_cves.slice(0, 5).map(([cve, count], i) => (
-                <div key={i} className="group">
-                  <div className="flex items-center justify-between mb-2">
-                    <code className="text-red-600 font-mono text-sm font-medium group-hover:text-ink-900 transition-colors">
-                      {cve}
-                    </code>
-                    <span className="text-ink-500 text-sm font-mono">{count}</span>
+                    </div>
                   </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-bar-fill bg-gradient-to-r from-red-500 to-orange-500"
-                      style={{
-                        width: `${(count / stats.top_cves[0][1]) * 100}%`,
-                      }}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Threats */}
+          {stats.top_threats.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={16} className="text-purple-500" />
+                <h3 className="font-medium text-slate-800 text-sm">Threat Actors</h3>
+              </div>
+              <div className="space-y-3">
+                {stats.top_threats.slice(0, 6).map(([threat, count], i) => (
+                  <div key={i} className="group">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium text-purple-600 group-hover:text-purple-700 transition-colors">
+                        {threat}
+                      </span>
+                      <span className="text-xs text-slate-400">{count}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-purple-500 transition-all duration-500"
+                        style={{ width: `${(count / stats.top_threats[0][1]) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Technique Bar Chart - Full width */}
+          {techniqueData.length > 0 && (
+            <div className="bg-white rounded-lg border border-slate-200 p-4 col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} className="text-green-500" />
+                <h3 className="font-medium text-slate-800 text-sm">Attack Technique Frequency</h3>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={techniqueData} barCategoryGap="15%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#94a3b8"
+                      tick={{ fontSize: 10, fill: '#64748b' }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e2e8f0' }}
                     />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Top Threats */}
-        {stats.top_threats.length > 0 && (
-          <div className="bg-white rounded-2xl border border-ink-100 p-6 shadow-soft">
-            <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-              <Skull size={18} className="text-violet-500" />
-              Top Threats
-            </h3>
-            <div className="space-y-4">
-              {stats.top_threats.slice(0, 5).map(([threat, count], i) => (
-                <div key={i} className="group">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-violet-600 font-medium text-sm group-hover:text-ink-900 transition-colors">
-                      {threat}
-                    </span>
-                    <span className="text-ink-500 text-sm font-mono">{count}</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-bar-fill bg-gradient-to-r from-violet-500 to-indigo-500"
-                      style={{
-                        width: `${(count / stats.top_threats[0][1]) * 100}%`,
-                      }}
+                    <YAxis
+                      stroke="#94a3b8"
+                      tick={{ fontSize: 10, fill: '#64748b' }}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e2e8f0' }}
                     />
-                  </div>
-                </div>
-              ))}
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} />
+                    <Bar
+                      dataKey="count"
+                      fill={CHART_COLORS.blue}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* TTP Distribution */}
-        {techniqueData.length > 0 && (
-          <div className="bg-white rounded-2xl border border-ink-100 p-6 shadow-soft lg:col-span-2">
-            <h3 className="font-display font-semibold text-ink-900 mb-6 flex items-center gap-2">
-              <Lightbulb size={18} className="text-accent-teal" />
-              Technique Distribution
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={techniqueData} barCategoryGap="15%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E8E5DE" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#9B9589"
-                    tick={{ fontSize: 11, fill: '#5C5850' }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#E8E5DE' }}
-                  />
-                  <YAxis
-                    stroke="#9B9589"
-                    tick={{ fontSize: 12, fill: '#5C5850' }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#E8E5DE' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(15, 139, 141, 0.05)' }} />
-                  <Bar
-                    dataKey="count"
-                    fill={CHART_COLORS.teal}
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
