@@ -2,7 +2,13 @@
 
 A personal threat intelligence platform for security professionals. Aggregate threat feeds, track vulnerabilities, monitor threat actors, and analyze attack patterns—all in a clean, minimal interface.
 
-![IntelMesh Dashboard](screenshots/dashboard.png)
+![IntelMesh Dashboard](screenshots/intel_mash_dashboard.png)
+
+![Threats View](screenshots/intelmash_2.png)
+
+![Analytics Overview](screenshots/intelmash_3.png)
+
+![Intelligence Feed](screenshots/intelmash_4.png)
 
 ## Features
 
