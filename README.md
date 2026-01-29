@@ -1,41 +1,39 @@
 # IntelMesh
 
-A personal threat intelligence platform for security professionals. Aggregate threat feeds, track vulnerabilities, monitor threat actors, and analyze attack patterns—all in a clean, minimal interface.
+A personal threat intelligence platform for security professionals. Aggregate threat feeds, track vulnerabilities, monitor threat actors, and analyze attack patterns — all in a clean, minimal interface.
+
+## Screenshots
+
+### Dashboard
+> Priority intelligence alerts, cyber global heatmap, active threat actors, targeted products, sectors at risk, critical CVEs, and malware classifications — all at a glance.
 
 ![IntelMesh Dashboard](screenshots/intel_mash_dashboard.png)
 
+### Threats
+> Browse identified threats grouped by malware families and threat actors. Each card shows mention counts and links to the source articles where they were detected.
+
 ![Threats View](screenshots/intelmash_2.png)
 
+### Analytics
+> Top CVEs ranked by mention frequency, top threats, TTP distribution across your intel sources, and a live feed of recent items tagged with extracted indicators.
+
 ![Analytics Overview](screenshots/intelmash_3.png)
+
+### Intelligence Feed
+> Scrollable feed of recent articles from 12+ OSINT sources. Each item is tagged with extracted CVEs, TTPs, and threat actors. The sidebar tracks CVE mention velocity and top threat rankings.
 
 ![Intelligence Feed](screenshots/intelmash_4.png)
 
 ## Features
 
-### Dashboard
-- **Key Risk Indicators**: Exploited CVEs, active threat actors, attack surface, sectors at risk, geographic spread
-- **Priority Intelligence**: High-severity items requiring immediate attention
-- **Attack Techniques**: Trending TTPs across your intel sources
-
-### Intelligence Briefings
-- **Daily/Weekly/Monthly Views**: Curated summaries with time-based filtering
-- **Briefing Modes**: Executive (impact-focused), Analyst (investigation angles), Engineer (detection focus)
-- **Trend Analysis**: Identify patterns and shifts in the threat landscape
-
-### Threat Feeds
-- **OSINT Feeds**: ThreatFox, URLhaus, MalwareBazaar, Feodo Tracker, CISA KEV
-- **IoC Types**: IPs, domains, URLs, file hashes
-- **CVE Tracking**: Known exploited vulnerabilities with ransomware indicators
-
-### Articles & Analysis
-- **12 News Sources**: BleepingComputer, The Hacker News, Krebs on Security, CISA, and more
-- **Entity Extraction**: CVEs, IoCs, threat actors, malware families, TTPs
-- **Rich Filtering**: By category, severity, and attack type
-
-### Trend Analysis
-- **Technique Radar**: Visual representation of attack technique frequency
-- **IoC Distribution**: Breakdown by indicator type
-- **Threat Actor Tracking**: Monitor active campaigns
+- **Priority Intelligence** — High-severity items surfaced for immediate attention
+- **Cyber Global Map** — Geographic heatmap of threat activity by region
+- **Threat Feeds** — ThreatFox, URLhaus, MalwareBazaar, Feodo Tracker, CISA KEV, OpenPhish, C2 Tracker, SSL Blacklist, Emerging Threats
+- **Entity Extraction** — Automated extraction of CVEs, IoCs, threat actors, malware families, and TTPs from articles
+- **12+ News Sources** — BleepingComputer, The Hacker News, Krebs on Security, CISA, and more
+- **PDF Upload** — Upload threat reports and extract structured intelligence
+- **Search** — Natural language query parsing across all collected intel
+- **TTP Analysis** — Technique distribution charts showing exploitation, persistence, defense evasion, credential theft, and more
 
 ## Quick Start
 
@@ -45,54 +43,47 @@ A personal threat intelligence platform for security professionals. Aggregate th
 
 ### Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/kpingul/IntelMesh.git
-   cd IntelMesh
-   ```
+```bash
+# Clone
+git clone https://github.com/kpingul/IntelMesh.git
+cd IntelMesh
 
-2. **Set up the backend:**
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+# Backend
+cd backend
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 
-3. **Set up the frontend:**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
+# Frontend
+cd ../frontend
+npm install
+```
 
 ### Running
 
-**Terminal 1 - Backend:**
 ```bash
-cd backend
-source venv/bin/activate
+# Terminal 1 — Backend
+cd backend && source venv/bin/activate
 python -m uvicorn main:app --reload --port 8000
-```
 
-**Terminal 2 - Frontend:**
-```bash
+# Terminal 2 — Frontend
 cd frontend
 npm run dev
 ```
 
-Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000)
 
 ## Architecture
 
 ```
 IntelMesh/
 ├── backend/
-│   ├── main.py           # FastAPI application
-│   ├── scraper.py        # RSS/HTML scraping
+│   ├── main.py           # FastAPI application & API routes
+│   ├── scraper.py        # RSS/HTML scraping from 12+ sources
 │   ├── extractors.py     # Entity extraction (CVEs, IoCs, TTPs)
-│   ├── threat_feeds.py   # OSINT feed integration
-│   ├── pdf_extractor.py  # PDF processing
-│   ├── query_parser.py   # Search query parsing
+│   ├── threat_feeds.py   # OSINT feed integrations
+│   ├── pdf_extractor.py  # PDF report processing
+│   ├── query_parser.py   # Natural language search parsing
 │   └── store.py          # In-memory data store
 │
 └── frontend/
@@ -113,20 +104,20 @@ IntelMesh/
         └── types/index.ts
 ```
 
-## API Endpoints
+## API
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/stats` | GET | Dashboard statistics |
 | `/api/items` | GET | All intel items |
 | `/api/items/{id}` | GET | Specific item details |
-| `/api/cves` | GET | CVEs with counts |
-| `/api/iocs` | GET | IoCs by type |
-| `/api/threats` | GET | Threats (malware + actors) |
+| `/api/cves` | GET | CVEs with mention counts |
+| `/api/iocs` | GET | IoCs grouped by type |
+| `/api/threats` | GET | Malware families + threat actors |
 | `/api/sync` | POST | Sync news sources |
-| `/api/upload` | POST | Upload PDFs |
-| `/api/search` | POST | Search intel |
-| `/api/feeds/sync` | POST | Sync threat feeds |
+| `/api/upload` | POST | Upload PDF reports |
+| `/api/search` | POST | Natural language search |
+| `/api/feeds/sync` | POST | Sync OSINT threat feeds |
 | `/api/feeds/iocs` | GET | Feed IoCs |
 | `/api/feeds/cves` | GET | Feed CVEs |
 
