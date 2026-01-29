@@ -9,20 +9,20 @@ A personal threat intelligence platform for security professionals. Aggregate th
 
 ![IntelMesh Dashboard](screenshots/intel_mash_dashboard.png)
 
-### Threats
-> Browse identified threats grouped by malware families and threat actors. Each card shows mention counts and links to the source articles where they were detected.
+### Articles
+> Aggregated articles from 12+ security news sources with entity extraction. Each article is tagged with CVEs, threat actors, malware families, and TTPs.
 
-![Threats View](screenshots/intelmash_2.png)
+![Articles](screenshots/intel_mesh_articles.png)
 
-### Analytics
-> Top CVEs ranked by mention frequency, top threats, TTP distribution across your intel sources, and a live feed of recent items tagged with extracted indicators.
+### Threat Feeds
+> Live OSINT feed data from ThreatFox, URLhaus, MalwareBazaar, Feodo Tracker, CISA KEV, and more. IoCs organized by type with source attribution.
 
-![Analytics Overview](screenshots/intelmash_3.png)
+![Threat Feeds](screenshots/intel_mesh_threat_feed.png)
 
-### Intelligence Feed
-> Scrollable feed of recent articles from 12+ OSINT sources. Each item is tagged with extracted CVEs, TTPs, and threat actors. The sidebar tracks CVE mention velocity and top threat rankings.
+### Trends
+> Track shifts in the threat landscape over time. Technique radar, IoC distribution, and threat actor activity trends.
 
-![Intelligence Feed](screenshots/intelmash_4.png)
+![Trends](screenshots/intel_mesh_trends.png)
 
 ## Features
 
